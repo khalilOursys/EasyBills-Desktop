@@ -1,0 +1,19 @@
+# Node modules
+node_modules
+package-lock.json
+# Build output
+build
+dist
+
+# Local environment files
+.env
+
+# Git
+.git
+.gitignore
+
+# Docker
+
+.dockerignore
+
+

@@ -1,0 +1,10 @@
+services:
+  admin-frontend: 
+    image: marwenaddinn/admin-oursys
+    container_name: admin-oursys  # Set a custom name for the container
+    ports:
+      - '3002:80'  # Map port 3000 on the host to port 80 in the container
+
+# Manual build command (for reference):
+# docker build docker build -t marwenaddinn/admin-oursys --build-arg VITE_API_URL=http://localhost:3001 .
+#docker compose up -d

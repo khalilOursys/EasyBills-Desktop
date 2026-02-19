@@ -1,0 +1,2 @@
+docker build -t marwenaddinn/admin-oursys --build-arg REACT_APP_BACK_BASEURL=http://localhost:3001/ .
+docker compose up -d
