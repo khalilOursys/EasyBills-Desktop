@@ -1,4 +1,3 @@
-// src/clients/clients.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -24,8 +23,24 @@ export class ClientsService {
       );
     }
 
+    // Check if city exists if cityId is provided
+    if (createClientDto.cityId) {
+      const city = await this.prisma.city.findUnique({
+        where: { id: createClientDto.cityId },
+      });
+
+      if (!city) {
+        throw new BadRequestException(
+          `City with id ${createClientDto.cityId} not found.`,
+        );
+      }
+    }
+
     return await this.prisma.client.create({
       data: createClientDto,
+      include: {
+        city: true, // Include city in response
+      },
     });
   }
 
@@ -40,6 +55,7 @@ export class ClientsService {
             totalTTC: true,
           },
         },
+        city: true, // Include city
       },
     });
   }
@@ -57,6 +73,7 @@ export class ClientsService {
             },
           },
         },
+        city: true, // Include city
       },
     });
 
@@ -87,9 +104,25 @@ export class ClientsService {
       }
     }
 
+    // Check if city exists if cityId is provided
+    if (updateClientDto.cityId) {
+      const city = await this.prisma.city.findUnique({
+        where: { id: updateClientDto.cityId },
+      });
+
+      if (!city) {
+        throw new BadRequestException(
+          `City with id ${updateClientDto.cityId} not found.`,
+        );
+      }
+    }
+
     return await this.prisma.client.update({
       where: { id },
       data: updateClientDto,
+      include: {
+        city: true,
+      },
     });
   }
 

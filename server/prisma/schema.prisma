@@ -27,15 +27,15 @@ enum PaymentMethod {
 enum PurchaseInvoiceType {
   PURCHASE_ORDER
   PURCHASE_INVOICE
-  PURCHASE_REFUND // CREDIT NOTE FROM SUPPLIER
+  PURCHASE_REFUND
 }
 
 enum SaleInvoiceType {
   QUOTATION
   DELIVERY_NOTE
   SALE_INVOICE
-  SALE_REFUND // CREDIT NOTE FOR CUSTOMER
-  DELIVERY_NOTE_OUT // FACTURE DE SORTIE
+  SALE_REFUND
+  SHIPPING_NOTE_INVOICE
 }
 
 enum InvoiceStatus {
@@ -43,6 +43,7 @@ enum InvoiceStatus {
   VALIDATED
   PAID
   CANCELLED
+  CLOSED
 }
 
 //////////////////////////////////////
@@ -56,6 +57,7 @@ model User {
   telephone  String?
   firstName  String?
   lastName   String?
+  cin        String? 
   role       UserRole  @default(COMMERCIAL)
   createdAt  DateTime  @default(now())
 }
@@ -81,6 +83,9 @@ model Client {
   phone        String?
   address      String?
   taxNumber    String?
+  email        String?
+  cityId       Int?
+  city         City?            @relation(fields: [cityId], references: [id])
 
   saleInvoices SaleInvoice[]
   payments     Payment[]
@@ -98,6 +103,9 @@ model Supplier {
   phone            String?
   address          String?
   bankRib          String?
+  email            String?
+  cityId           Int?
+  city             City?                @relation(fields: [cityId], references: [id])
 
   purchaseInvoices PurchaseInvoice[]
   payments         Payment[]
@@ -109,20 +117,26 @@ model Supplier {
 
 model Product {
   id            Int       @id @default(autoincrement())
-  reference     String
-  internalCode  String
+  reference     String?
+  internalCode  String?
   name          String
+  description   String?
 
   stock         Int       @default(0)
   minStock      Int       @default(0)
-  purchasePrice Float
-  marginPercent Float
-  salePrice     Float
+  purchasePrice Float @default(0)
+  marginPercent Float @default(0)
+  salePrice     Float @default(0)
+  priceIncludingTax Float @default(0)
   discount      Float     @default(0)
   vat           Float     @default(19)
+  img String?
 
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
+
+  brandId       Int?
+  brand         Brand?    @relation(fields: [brandId], references: [id])
 
   purchaseInvoiceItems PurchaseInvoiceItem[]
   saleInvoiceItems     SaleInvoiceItem[]
@@ -138,8 +152,7 @@ model PurchaseInvoice {
   date          DateTime                @default(now())
   type          PurchaseInvoiceType
   status        InvoiceStatus           @default(DRAFT)
-
-  // CREDIT NOTE RELATION (self-relational)
+  
   originalInvoiceId Int?
   originalInvoice   PurchaseInvoice? @relation("PurchaseRefunds", fields: [originalInvoiceId], references: [id])
   refunds           PurchaseInvoice[] @relation("PurchaseRefunds")
@@ -175,25 +188,58 @@ model PurchaseInvoiceItem {
 // SALE INVOICE
 //////////////////////////////////////
 
+model SaleInvoiceCity {
+  id            Int         @id @default(autoincrement())
+  saleInvoiceId Int
+  cityId        Int
+  createdAt     DateTime    @default(now())
+
+  saleInvoice   SaleInvoice @relation(fields: [saleInvoiceId], references: [id], onDelete: Cascade)
+  city          City        @relation(fields: [cityId], references: [id])
+
+  @@unique([saleInvoiceId, cityId])
+}
+
+model DeliveryNoteConsolidation {
+  id                        Int @id @default(autoincrement())
+  consolidatedSaleInvoiceId Int
+  consolidatedSaleInvoice   SaleInvoice @relation("ConsolidatedToSource", fields: [consolidatedSaleInvoiceId], references: [id], onDelete: Cascade)
+  
+  sourceDeliveryNoteId      Int
+  sourceDeliveryNote        SaleInvoice @relation("SourceToConsolidated", fields: [sourceDeliveryNoteId], references: [id])
+  
+  createdAt                 DateTime @default(now())
+  
+  @@unique([consolidatedSaleInvoiceId, sourceDeliveryNoteId])
+}
+
 model SaleInvoice {
   id            Int                @id @default(autoincrement())
   invoiceNumber String
   date          DateTime           @default(now())
-  startDate     DateTime?          // Optional start date
-  endDate       DateTime?          // Optional end date
+  startDate     DateTime?
+  endDate       DateTime?
   type          SaleInvoiceType
   status        InvoiceStatus      @default(DRAFT)
   taxStamp      Float              @default(1)
-  // CREDIT NOTE RELATION (self-relational)
+  
+  shippingNoteId Int?
+  shippingNote   SaleInvoice?       @relation("ShippingNoteToDeliveryNotes", fields: [shippingNoteId], references: [id])
+  deliveryNotes  SaleInvoice[]      @relation("ShippingNoteToDeliveryNotes")
+  
   originalInvoiceId Int?
   originalInvoice   SaleInvoice? @relation("SaleRefunds", fields: [originalInvoiceId], references: [id])
   refunds           SaleInvoice[] @relation("SaleRefunds")
+  consolidatedDeliveryNotes DeliveryNoteConsolidation[] @relation("ConsolidatedToSource")
+  consolidatedInInvoice     DeliveryNoteConsolidation[] @relation("SourceToConsolidated")
 
   clientId      Int?
   client        Client?             @relation(fields: [clientId], references: [id])
   
-  driverId      Int?               // Optional driver relation
+  driverId      Int?
   driver        Driver?             @relation(fields: [driverId], references: [id])
+  
+  cities        SaleInvoiceCity[]
 
   items         SaleInvoiceItem[]
   payments      Payment[]          @relation("SaleInvoicePayments")
@@ -211,12 +257,17 @@ model SaleInvoiceItem {
 
   vatRate   Float   @default(0)
   vatAmount Float   @default(0)
+  
+  shippingNoteItemId Int?
 
   invoiceId Int
   productId Int
 
   invoice   SaleInvoice @relation(fields: [invoiceId], references: [id])
   product   Product     @relation(fields: [productId], references: [id])
+
+  shippingNoteItem   SaleInvoiceItem? @relation("ItemToSource", fields: [shippingNoteItemId], references: [id])
+  derivedItems       SaleInvoiceItem[] @relation("ItemToSource")
 }
 
 //////////////////////////////////////
@@ -262,10 +313,11 @@ model Driver {
   firstName     String
   lastName      String
   phone         String?
+  email         String?
   cin           String?
   licenseNumber String?
   active        Boolean  @default(true)
-  saleInvoices  SaleInvoice[] // One driver can have many sale invoices
+  saleInvoices  SaleInvoice[]
   carId Int?
   car   Car? @relation(fields: [carId], references: [id])
 }
@@ -276,7 +328,7 @@ model Car {
   brand         String?
   model         String?
   year          Int?
-  driver   Driver[]   // driver can have multiple cars 
+  driver   Driver[]
 
   createdAt DateTime @default(now())
 }
@@ -290,4 +342,28 @@ model Brand {
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model City {
+  id        Int      @id @default(autoincrement())
+  name      String
+  state     String?
+  country   String      @default("Tunisia")   
+  clients   Client[]
+  suppliers Supplier[]
+  saleInvoices SaleInvoiceCity[]
+  isActive  Boolean   @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt  
+}
+
+model HeroBanner {
+  id        Int      @id @default(autoincrement())
+  name        String?
+  description String?
+  img String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

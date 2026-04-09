@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateSupplierDto {
   @IsString()
@@ -24,4 +25,12 @@ export class CreateSupplierDto {
   @IsString()
   @IsOptional()
   bankRib?: string;
+
+  @IsString()
+  @IsOptional()
+  email?: string; // Added: Optional email field
+
+  @IsNumber()
+  @IsOptional()
+  cityId?: number; // Added: Optional cityId field
 }

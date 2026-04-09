@@ -8,10 +8,12 @@ import {
   Param,
   Body,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { PaginationDto } from './dto/pagination.dto';
 
 @Controller('categories')
 export class CategoriesController {
@@ -25,6 +27,12 @@ export class CategoriesController {
   @Get()
   async findAll() {
     return await this.categoriesService.findAll();
+  }
+
+  // New endpoint for paginated categories
+  @Get('paginated')
+  async findAllPaginated(@Query() paginationDto: PaginationDto) {
+    return await this.categoriesService.findAllPaginated(paginationDto);
   }
 
   @Get(':id')

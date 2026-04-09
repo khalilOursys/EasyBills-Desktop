@@ -15,6 +15,8 @@ import { RefundInvoiceModule } from './refund-invoice/refund-invoice.module';
 import { CarsModule } from './cars/cars.module';
 import { DriverModule } from './driver/driver.module';
 import { BrandsModule } from './brands/brands.module';
+import { CitiesModule } from './cities/cities.module';
+import { HeroBannerModule } from './hero-banner/hero-banner.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { BrandsModule } from './brands/brands.module';
     CarsModule,
     DriverModule,
     BrandsModule,
+    CitiesModule,
+    HeroBannerModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],

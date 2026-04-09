@@ -1,18 +1,22 @@
-// src/products/dto/create-product.dto.ts
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateProductDto {
   @IsString()
-  @IsNotEmpty()
-  reference: string;
+  @IsOptional()
+  reference?: string;
 
   @IsString()
-  @IsNotEmpty()
-  internalCode: string;
+  @IsOptional()
+  internalCode?: string;
 
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string; // Added: Optional description field
 
   @IsNumber()
   @IsOptional()
@@ -35,6 +39,10 @@ export class CreateProductDto {
   salePrice: number;
 
   @IsNumber()
+  @IsNotEmpty()
+  priceIncludingTax: number;
+
+  @IsNumber()
   @IsOptional()
   discount?: number;
 
@@ -45,4 +53,8 @@ export class CreateProductDto {
   @IsNumber()
   @IsNotEmpty()
   categoryId: number;
+
+  @IsNumber()
+  @IsOptional()
+  brandId?: number;
 }

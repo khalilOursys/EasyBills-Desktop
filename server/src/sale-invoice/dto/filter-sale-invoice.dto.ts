@@ -1,5 +1,3 @@
-// dto/filter-sale-invoice.dto.ts
-
 import {
   IsDateString,
   IsEnum,
@@ -32,6 +30,11 @@ export class FilterSaleInvoiceDto {
   @IsOptional()
   clientName?: string;
 
+  @IsInt()
+  @Type(() => Number)
+  @IsOptional()
+  clientId?: number;
+
   @IsString()
   @IsOptional()
   invoiceNumber?: string;
@@ -40,6 +43,10 @@ export class FilterSaleInvoiceDto {
   @Type(() => Number)
   @IsOptional()
   driverId?: number;
+
+  @IsString()
+  @IsOptional()
+  driverCIN?: string; // Add driver CIN filter
 
   @IsBoolean()
   @Type(() => Boolean)
@@ -53,4 +60,8 @@ export class FilterSaleInvoiceDto {
   @IsDateString()
   @IsOptional()
   dateTo?: string;
+
+  @IsInt()
+  @IsOptional()
+  shippingNoteId?: number;
 }

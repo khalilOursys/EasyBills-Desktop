@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { PaginationDto } from './dto/pagination.dto';
 
 @Injectable()
 export class CategoriesService {
@@ -41,6 +42,61 @@ export class CategoriesService {
         },
       },
     });
+  }
+
+  // New method for paginated categories
+  async findAllPaginated(paginationDto: PaginationDto) {
+    const { page = 1, limit = 10, search = '' } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    // Build where condition for search
+    const where = {
+      ...(search && {
+        name: {
+          contains: search,
+          mode: 'insensitive' as const,
+        },
+      }),
+      products: {
+        some: {}, // This ensures category has at least one product
+      },
+    };
+
+    // Get total count for pagination metadata
+    const total = await this.prisma.category.count({ where });
+
+    // Get paginated categories
+    const categories = await this.prisma.category.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { id: 'desc' },
+      include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    return {
+      data: categories,
+      metadata: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+      },
+    };
   }
 
   async findOne(id: number) {

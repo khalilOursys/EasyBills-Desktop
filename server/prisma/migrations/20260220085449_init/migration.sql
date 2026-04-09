@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "brandId" INTEGER,
+ADD COLUMN     "img" TEXT,
+ADD COLUMN     "priceIncludingTax" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ALTER COLUMN "purchasePrice" SET DEFAULT 0,
+ALTER COLUMN "marginPercent" SET DEFAULT 0,
+ALTER COLUMN "salePrice" SET DEFAULT 0;
+
+-- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_brandId_fkey" FOREIGN KEY ("brandId") REFERENCES "Brand"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -1,5 +1,5 @@
-// src/clients/dto/create-client.dto.ts
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateClientDto {
   @IsString()
@@ -17,4 +17,12 @@ export class CreateClientDto {
   @IsString()
   @IsOptional()
   taxNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  email?: string; // Added: Optional email field
+
+  @IsNumber()
+  @IsOptional()
+  cityId?: number; // Added: Optional cityId field
 }
