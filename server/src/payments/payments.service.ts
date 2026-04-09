@@ -1,4 +1,5 @@
 // src/payments/payments.service.ts
+
 import {
   Injectable,
   NotFoundException,
@@ -7,7 +8,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, InvoiceStatus } from '@prisma/client';
 
 @Injectable()
 export class PaymentsService {
@@ -34,75 +35,314 @@ export class PaymentsService {
       );
     }
 
-    // Validate invoice exists and belongs to the right entity
-    if (createPaymentDto.purchaseInvoiceId) {
-      const invoice = await this.prisma.purchaseInvoice.findUnique({
-        where: { id: createPaymentDto.purchaseInvoiceId },
-        include: { supplier: true },
-      });
+    // Use transaction to ensure data consistency
+    return await this.prisma.$transaction(async (prisma) => {
+      let invoice;
+      let totalPaid: number = 0; // Initialize with default value
+      let invoiceType: 'purchase' | 'sale' | null = null;
 
-      if (!invoice) {
-        throw new NotFoundException(
-          `Purchase invoice with id ${createPaymentDto.purchaseInvoiceId} not found.`,
+      // Validate purchase invoice
+      if (createPaymentDto.purchaseInvoiceId) {
+        invoiceType = 'purchase';
+        invoice = await prisma.purchaseInvoice.findUnique({
+          where: { id: createPaymentDto.purchaseInvoiceId },
+          include: { supplier: true },
+        });
+
+        if (!invoice) {
+          throw new NotFoundException(
+            `Purchase invoice with id ${createPaymentDto.purchaseInvoiceId} not found.`,
+          );
+        }
+
+        if (invoice.supplierId !== createPaymentDto.supplierId) {
+          throw new BadRequestException(
+            'Supplier does not match the purchase invoice supplier.',
+          );
+        }
+
+        // Calculate total paid for this invoice
+        totalPaid = await this.getInvoiceTotalPaid(
+          prisma,
+          'purchase',
+          createPaymentDto.purchaseInvoiceId,
         );
       }
 
-      if (invoice.supplierId !== createPaymentDto.supplierId) {
-        throw new BadRequestException(
-          'Supplier does not match the purchase invoice supplier.',
+      // Validate sale invoice
+      if (createPaymentDto.saleInvoiceId) {
+        invoiceType = 'sale';
+        invoice = await prisma.saleInvoice.findUnique({
+          where: { id: createPaymentDto.saleInvoiceId },
+          include: { client: true },
+        });
+
+        if (!invoice) {
+          throw new NotFoundException(
+            `Sale invoice with id ${createPaymentDto.saleInvoiceId} not found.`,
+          );
+        }
+
+        if (invoice.clientId !== createPaymentDto.clientId) {
+          throw new BadRequestException(
+            'Client does not match the sale invoice client.',
+          );
+        }
+
+        // Calculate total paid for this invoice
+        totalPaid = await this.getInvoiceTotalPaid(
+          prisma,
+          'sale',
+          createPaymentDto.saleInvoiceId,
         );
       }
 
-      // Calculate total paid for this invoice
-      const totalPaid = await this.getInvoiceTotalPaid(
-        'purchase',
-        createPaymentDto.purchaseInvoiceId,
-      );
-
-      if (totalPaid + createPaymentDto.amount > invoice.totalTTC) {
+      // Validate payment amount doesn't exceed remaining balance
+      if (invoice && totalPaid + createPaymentDto.amount > invoice.totalTTC) {
         throw new BadRequestException(
           `Payment amount exceeds the remaining balance. Maximum allowed: ${invoice.totalTTC - totalPaid}`,
         );
       }
-    }
 
-    if (createPaymentDto.saleInvoiceId) {
-      const invoice = await this.prisma.saleInvoice.findUnique({
-        where: { id: createPaymentDto.saleInvoiceId },
-        include: { client: true },
+      // Create the payment
+      const payment = await prisma.payment.create({
+        data: {
+          ...createPaymentDto,
+          createdAt: new Date(),
+        },
       });
 
-      if (!invoice) {
-        throw new NotFoundException(
-          `Sale invoice with id ${createPaymentDto.saleInvoiceId} not found.`,
-        );
+      // Check and update invoice status based on new total paid
+      if (invoice && invoiceType) {
+        const newTotalPaid = totalPaid + createPaymentDto.amount;
+
+        if (invoiceType === 'purchase' && createPaymentDto.purchaseInvoiceId) {
+          await this.updatePurchaseInvoiceStatus(
+            prisma,
+            createPaymentDto.purchaseInvoiceId,
+            invoice,
+            newTotalPaid,
+          );
+        }
+
+        if (invoiceType === 'sale' && createPaymentDto.saleInvoiceId) {
+          await this.updateSaleInvoiceStatus(
+            prisma,
+            createPaymentDto.saleInvoiceId,
+            invoice,
+            newTotalPaid,
+          );
+        }
       }
 
-      if (invoice.clientId !== createPaymentDto.clientId) {
-        throw new BadRequestException(
-          'Client does not match the sale invoice client.',
-        );
-      }
-
-      // Calculate total paid for this invoice
-      const totalPaid = await this.getInvoiceTotalPaid(
-        'sale',
-        createPaymentDto.saleInvoiceId,
-      );
-
-      if (totalPaid + createPaymentDto.amount > invoice.totalTTC) {
-        throw new BadRequestException(
-          `Payment amount exceeds the remaining balance. Maximum allowed: ${invoice.totalTTC - totalPaid}`,
-        );
-      }
-    }
-
-    return await this.prisma.payment.create({
-      data: {
-        ...createPaymentDto,
-        createdAt: new Date(),
-      },
+      return payment;
     });
+  }
+
+  async update(id: number, updatePaymentDto: UpdatePaymentDto) {
+    // Check if payment exists and get its details
+    const existingPayment = await this.findOne(id);
+
+    // Prevent changing invoice links
+    if (
+      updatePaymentDto.purchaseInvoiceId ||
+      updatePaymentDto.saleInvoiceId ||
+      updatePaymentDto.supplierId ||
+      updatePaymentDto.clientId
+    ) {
+      throw new BadRequestException(
+        'Cannot change invoice or entity associations. Create a new payment instead.',
+      );
+    }
+
+    // Use transaction to ensure data consistency
+    return await this.prisma.$transaction(async (prisma) => {
+      // Store old amount for comparison
+      const oldAmount = existingPayment.amount;
+      const newAmount = updatePaymentDto.amount ?? oldAmount;
+      const amountDiff = newAmount - oldAmount;
+
+      // Update the payment
+      const updatedPayment = await prisma.payment.update({
+        where: { id },
+        data: updatePaymentDto,
+      });
+
+      // If amount changed, update invoice status
+      if (amountDiff !== 0) {
+        // Update purchase invoice if applicable
+        if (existingPayment.purchaseInvoiceId) {
+          const invoice = await prisma.purchaseInvoice.findUnique({
+            where: { id: existingPayment.purchaseInvoiceId },
+          });
+
+          if (invoice) {
+            const totalPaid = await this.getInvoiceTotalPaid(
+              prisma,
+              'purchase',
+              existingPayment.purchaseInvoiceId,
+            );
+
+            await this.updatePurchaseInvoiceStatus(
+              prisma,
+              existingPayment.purchaseInvoiceId,
+              invoice,
+              totalPaid,
+            );
+          }
+        }
+
+        // Update sale invoice if applicable
+        if (existingPayment.saleInvoiceId) {
+          const invoice = await prisma.saleInvoice.findUnique({
+            where: { id: existingPayment.saleInvoiceId },
+          });
+
+          if (invoice) {
+            const totalPaid = await this.getInvoiceTotalPaid(
+              prisma,
+              'sale',
+              existingPayment.saleInvoiceId,
+            );
+
+            await this.updateSaleInvoiceStatus(
+              prisma,
+              existingPayment.saleInvoiceId,
+              invoice,
+              totalPaid,
+            );
+          }
+        }
+      }
+
+      return updatedPayment;
+    });
+  }
+
+  async remove(id: number) {
+    // Check if payment exists and get its details
+    const payment = await this.findOne(id);
+
+    // Check if payment is older than 24 hours
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+    if (payment.createdAt < twentyFourHoursAgo) {
+      throw new BadRequestException(
+        'Cannot delete payments older than 24 hours.',
+      );
+    }
+
+    // Use transaction to ensure data consistency
+    return await this.prisma.$transaction(async (prisma) => {
+      // Delete the payment
+      await prisma.payment.delete({
+        where: { id },
+      });
+
+      // Check and update invoice status after deletion
+      if (payment.purchaseInvoiceId) {
+        const invoice = await prisma.purchaseInvoice.findUnique({
+          where: { id: payment.purchaseInvoiceId },
+        });
+
+        if (invoice) {
+          const totalPaid = await this.getInvoiceTotalPaid(
+            prisma,
+            'purchase',
+            payment.purchaseInvoiceId,
+          );
+
+          await this.updatePurchaseInvoiceStatus(
+            prisma,
+            payment.purchaseInvoiceId,
+            invoice,
+            totalPaid,
+          );
+        }
+      }
+
+      if (payment.saleInvoiceId) {
+        const invoice = await prisma.saleInvoice.findUnique({
+          where: { id: payment.saleInvoiceId },
+        });
+
+        if (invoice) {
+          const totalPaid = await this.getInvoiceTotalPaid(
+            prisma,
+            'sale',
+            payment.saleInvoiceId,
+          );
+
+          await this.updateSaleInvoiceStatus(
+            prisma,
+            payment.saleInvoiceId,
+            invoice,
+            totalPaid,
+          );
+        }
+      }
+
+      return { message: 'Payment deleted successfully', id };
+    });
+  }
+
+  // Helper method to update purchase invoice status
+  private async updatePurchaseInvoiceStatus(
+    prisma: any,
+    invoiceId: number,
+    invoice: any,
+    totalPaid: number,
+  ) {
+    let newStatus = invoice.status;
+
+    if (totalPaid >= invoice.totalTTC) {
+      newStatus = InvoiceStatus.PAID;
+    } else if (
+      invoice.status === InvoiceStatus.PAID &&
+      totalPaid < invoice.totalTTC
+    ) {
+      newStatus = InvoiceStatus.VALIDATED;
+    }
+
+    if (newStatus !== invoice.status) {
+      await prisma.purchaseInvoice.update({
+        where: { id: invoiceId },
+        data: { status: newStatus },
+      });
+      console.log(
+        `Purchase invoice ${invoice.invoiceNumber} status updated from ${invoice.status} to ${newStatus}`,
+      );
+    }
+  }
+
+  // Helper method to update sale invoice status
+  private async updateSaleInvoiceStatus(
+    prisma: any,
+    invoiceId: number,
+    invoice: any,
+    totalPaid: number,
+  ) {
+    let newStatus = invoice.status;
+
+    if (totalPaid >= invoice.totalTTC) {
+      newStatus = InvoiceStatus.PAID;
+    } else if (
+      invoice.status === InvoiceStatus.PAID &&
+      totalPaid < invoice.totalTTC
+    ) {
+      newStatus = InvoiceStatus.VALIDATED;
+    }
+
+    if (newStatus !== invoice.status) {
+      await prisma.saleInvoice.update({
+        where: { id: invoiceId },
+        data: { status: newStatus },
+      });
+      console.log(
+        `Sale invoice ${invoice.invoiceNumber} status updated from ${invoice.status} to ${newStatus}`,
+      );
+    }
   }
 
   async findAll(type?: 'purchase' | 'sale' | 'all', entityId?: string) {
@@ -133,6 +373,7 @@ export class PaymentsService {
             id: true,
             invoiceNumber: true,
             totalTTC: true,
+            status: true,
           },
         },
         saleInvoice: {
@@ -140,6 +381,7 @@ export class PaymentsService {
             id: true,
             invoiceNumber: true,
             totalTTC: true,
+            status: true,
           },
         },
         supplier: {
@@ -176,47 +418,6 @@ export class PaymentsService {
     return payment;
   }
 
-  async update(id: number, updatePaymentDto: UpdatePaymentDto) {
-    // Check if payment exists
-    await this.findOne(id);
-
-    // Prevent changing invoice links
-    if (
-      updatePaymentDto.purchaseInvoiceId ||
-      updatePaymentDto.saleInvoiceId ||
-      updatePaymentDto.supplierId ||
-      updatePaymentDto.clientId
-    ) {
-      throw new BadRequestException(
-        'Cannot change invoice or entity associations. Create a new payment instead.',
-      );
-    }
-
-    return await this.prisma.payment.update({
-      where: { id },
-      data: updatePaymentDto,
-    });
-  }
-
-  async remove(id: number) {
-    // Check if payment exists
-    const payment = await this.findOne(id);
-
-    // Check if payment is older than 24 hours
-    const twentyFourHoursAgo = new Date();
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-
-    if (payment.createdAt < twentyFourHoursAgo) {
-      throw new BadRequestException(
-        'Cannot delete payments older than 24 hours.',
-      );
-    }
-
-    return await this.prisma.payment.delete({
-      where: { id },
-    });
-  }
-
   async findBySupplier(supplierId: number) {
     return await this.prisma.payment.findMany({
       where: { supplierId },
@@ -226,6 +427,8 @@ export class PaymentsService {
           select: {
             id: true,
             invoiceNumber: true,
+            totalTTC: true,
+            status: true,
           },
         },
       },
@@ -241,6 +444,8 @@ export class PaymentsService {
           select: {
             id: true,
             invoiceNumber: true,
+            totalTTC: true,
+            status: true,
           },
         },
       },
@@ -248,7 +453,7 @@ export class PaymentsService {
   }
 
   async findByPurchaseInvoice(purchaseInvoiceId: number) {
-    return await this.prisma.payment.findMany({
+    const payments = await this.prisma.payment.findMany({
       where: { purchaseInvoiceId },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -260,10 +465,32 @@ export class PaymentsService {
         },
       },
     });
+
+    const invoice = await this.prisma.purchaseInvoice.findUnique({
+      where: { id: purchaseInvoiceId },
+      select: {
+        totalTTC: true,
+        status: true,
+        invoiceNumber: true,
+      },
+    });
+
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+
+    return {
+      invoice,
+      payments,
+      summary: {
+        totalPaid,
+        totalTTC: invoice?.totalTTC || 0,
+        remainingAmount: (invoice?.totalTTC || 0) - totalPaid,
+        isFullyPaid: invoice ? totalPaid >= invoice.totalTTC : false,
+      },
+    };
   }
 
   async findBySaleInvoice(saleInvoiceId: number) {
-    return await this.prisma.payment.findMany({
+    const payments = await this.prisma.payment.findMany({
       where: { saleInvoiceId },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -275,6 +502,28 @@ export class PaymentsService {
         },
       },
     });
+
+    const invoice = await this.prisma.saleInvoice.findUnique({
+      where: { id: saleInvoiceId },
+      select: {
+        totalTTC: true,
+        status: true,
+        invoiceNumber: true,
+      },
+    });
+
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+
+    return {
+      invoice,
+      payments,
+      summary: {
+        totalPaid,
+        totalTTC: invoice?.totalTTC || 0,
+        remainingAmount: (invoice?.totalTTC || 0) - totalPaid,
+        isFullyPaid: invoice ? totalPaid >= invoice.totalTTC : false,
+      },
+    };
   }
 
   async getTodaySummary() {
@@ -321,6 +570,7 @@ export class PaymentsService {
   }
 
   private async getInvoiceTotalPaid(
+    prisma: any,
     type: 'purchase' | 'sale',
     invoiceId: number,
   ): Promise<number> {
@@ -329,11 +579,65 @@ export class PaymentsService {
         ? { purchaseInvoiceId: invoiceId }
         : { saleInvoiceId: invoiceId };
 
-    const payments = await this.prisma.payment.findMany({
+    const payments = await prisma.payment.findMany({
       where,
       select: { amount: true },
     });
 
-    return payments.reduce((sum, p) => sum + p.amount, 0);
+    return payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+  }
+
+  async getBulkPaymentStatus(invoiceIds: number[], type: 'purchase' | 'sale') {
+    const where =
+      type === 'purchase'
+        ? { purchaseInvoiceId: { in: invoiceIds } }
+        : { saleInvoiceId: { in: invoiceIds } };
+
+    const payments = await this.prisma.payment.findMany({
+      where,
+      select: {
+        amount: true,
+        purchaseInvoiceId: true,
+        saleInvoiceId: true,
+      },
+    });
+
+    // Get invoices to know their totals
+    let invoices;
+    if (type === 'purchase') {
+      invoices = await this.prisma.purchaseInvoice.findMany({
+        where: { id: { in: invoiceIds } },
+        select: { id: true, totalTTC: true },
+      });
+    } else {
+      invoices = await this.prisma.saleInvoice.findMany({
+        where: { id: { in: invoiceIds } },
+        select: { id: true, totalTTC: true },
+      });
+    }
+
+    const invoiceMap = new Map(invoices.map((i) => [i.id, i.totalTTC]));
+    const summary: Record<
+      number,
+      { totalPaid: number; remainingAmount: number; isFullyPaid: boolean }
+    > = {};
+
+    invoiceIds.forEach((id) => {
+      const invoicePayments = payments.filter((p) =>
+        type === 'purchase'
+          ? p.purchaseInvoiceId === id
+          : p.saleInvoiceId === id,
+      );
+      const totalPaid = invoicePayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalTTC = invoiceMap.get(id) || 0;
+
+      summary[id] = {
+        totalPaid,
+        remainingAmount: totalTTC - totalPaid,
+        isFullyPaid: totalPaid >= totalTTC,
+      };
+    });
+
+    return summary;
   }
 }

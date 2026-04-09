@@ -24,6 +24,10 @@ export class CreateDriverDto {
   phone?: string;
 
   @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
   @IsString()
   cin?: string;
 

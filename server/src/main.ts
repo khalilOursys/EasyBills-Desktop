@@ -20,10 +20,11 @@ async function bootstrap() {
   // Correct CORS config for both dev and production
   app.enableCors({
     origin: [
-      'http://localhost:3000',
       'http://localhost:8000',
       'http://localhost:3002',
-      'http://localhost',
+      'https://oralwave.tn',
+      'https://admin.oralwave.tn',
+      'http://localhost:3000',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: ['Content-Type', 'Authorization'],

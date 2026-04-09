@@ -1,4 +1,4 @@
-// dto/create-sale-invoice.dto.ts
+// src/sale-invoice/dto/create-sale-invoice.dto.ts
 
 import {
   IsArray,
@@ -13,6 +13,7 @@ import {
   IsDateString,
   IsPositive,
   Max,
+  ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SaleInvoiceType, InvoiceStatus } from '@prisma/client';
@@ -23,7 +24,6 @@ export class CreateSaleInvoiceItemDto {
   productId: number;
 
   @IsInt()
-  @Min(1)
   quantity: number;
 
   @IsNumber()
@@ -41,6 +41,10 @@ export class CreateSaleInvoiceItemDto {
   @Min(0)
   @IsOptional()
   vatAmount?: number;
+
+  @IsInt()
+  @IsOptional()
+  shippingNoteItemId?: number;
 }
 
 export class CreateSaleInvoiceDto {
@@ -75,6 +79,21 @@ export class CreateSaleInvoiceDto {
   @IsInt()
   @IsOptional()
   driverId?: number;
+
+  @IsInt()
+  @IsOptional()
+  shippingNoteId?: number;
+
+  // NEW: Array of delivery note IDs to consolidate into this invoice
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  deliveryNoteIds?: number[];
+
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  cityIds?: number[];
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -37,3 +37,53 @@ export const multerConfigBrands = {
     }
   },
 };
+
+export const multerConfigProducts = {
+  storage: diskStorage({
+    destination: './uploads/products',
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = extname(file.originalname);
+      cb(null, `product-${uniqueSuffix}${ext}`);
+    },
+  }),
+  fileFilter: (
+    req: any,
+    file: { mimetype: string },
+    cb: (arg0: Error | null, arg1: boolean) => void,
+  ) => {
+    if (file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+};
+
+export const multerConfigHeroBanner = {
+  storage: diskStorage({
+    destination: './uploads/products',
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = extname(file.originalname);
+      cb(null, `product-${uniqueSuffix}${ext}`);
+    },
+  }),
+  fileFilter: (
+    req: any,
+    file: { mimetype: string },
+    cb: (arg0: Error | null, arg1: boolean) => void,
+  ) => {
+    if (file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+};

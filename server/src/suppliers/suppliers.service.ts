@@ -1,4 +1,3 @@
-// src/suppliers/suppliers.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -35,8 +34,24 @@ export class SuppliersService {
       );
     }
 
+    // Check if city exists if cityId is provided
+    if (createSupplierDto.cityId) {
+      const city = await this.prisma.city.findUnique({
+        where: { id: createSupplierDto.cityId },
+      });
+
+      if (!city) {
+        throw new BadRequestException(
+          `City with id ${createSupplierDto.cityId} not found.`,
+        );
+      }
+    }
+
     return await this.prisma.supplier.create({
       data: createSupplierDto,
+      include: {
+        city: true, // Include city in response
+      },
     });
   }
 
@@ -51,6 +66,7 @@ export class SuppliersService {
             totalTTC: true,
           },
         },
+        city: true, // Include city
       },
     });
   }
@@ -68,6 +84,7 @@ export class SuppliersService {
             },
           },
         },
+        city: true, // Include city
       },
     });
 
@@ -114,9 +131,25 @@ export class SuppliersService {
       }
     }
 
+    // Check if city exists if cityId is provided
+    if (updateSupplierDto.cityId) {
+      const city = await this.prisma.city.findUnique({
+        where: { id: updateSupplierDto.cityId },
+      });
+
+      if (!city) {
+        throw new BadRequestException(
+          `City with id ${updateSupplierDto.cityId} not found.`,
+        );
+      }
+    }
+
     return await this.prisma.supplier.update({
       where: { id },
       data: updateSupplierDto,
+      include: {
+        city: true,
+      },
     });
   }
 
