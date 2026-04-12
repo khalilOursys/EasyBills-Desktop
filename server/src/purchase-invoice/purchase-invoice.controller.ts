@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
+  Put,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PurchaseInvoiceService } from './purchase-invoice.service';
@@ -57,7 +58,7 @@ export class PurchaseInvoiceController {
     return this.purchaseInvoiceService.findBySupplier(supplierId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePurchaseInvoiceDto: UpdatePurchaseInvoiceDto,
@@ -65,7 +66,7 @@ export class PurchaseInvoiceController {
     return this.purchaseInvoiceService.update(id, updatePurchaseInvoiceDto);
   }
 
-  @Patch(':id/status')
+  @Put(':id/status')
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateStatusDto: UpdateStatusDto,
