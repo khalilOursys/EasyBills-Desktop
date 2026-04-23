@@ -28,7 +28,7 @@ const addSupplier = async (supplierData: {
   email?: string;
   cityId?: number;
 }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/suppliers`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}suppliers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

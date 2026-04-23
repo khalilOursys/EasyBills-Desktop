@@ -80,14 +80,35 @@ async function main() {
   await prisma.category.createMany({
     data: [
       {
-        name: 'Électronique',
-        description: 'Produits électroniques et gadgets',
+        name: 'Coffee',
+        description: 'Hot and cold coffee beverages',
       },
-      { name: 'Informatique', description: 'Ordinateurs et accessoires' },
-      { name: 'Bureau', description: 'Fournitures de bureau' },
+      {
+        name: 'Pastry',
+        description: 'Fresh pastries and baked goods',
+      },
+      {
+        name: 'Dessert',
+        description: 'Sweet desserts and cakes',
+      },
+      {
+        name: 'Tea',
+        description: 'Hot and iced tea beverages',
+      },
+      {
+        name: 'Beverage',
+        description: 'Cold drinks and juices',
+      },
     ],
   });
   const categoryList = await prisma.category.findMany();
+
+  // Create a map for easier category lookup
+  const categoryMap = new Map();
+  categoryList.forEach((cat) => {
+    categoryMap.set(cat.name, cat.id);
+  });
+
   console.log('📂 Created categories');
 
   // ----------------------
@@ -153,53 +174,170 @@ async function main() {
   console.log('🏭 Created suppliers');
 
   // ----------------------
-  // PRODUCTS
+  // PRODUCTS (POS Products)
   // ----------------------
   await prisma.product.createMany({
     data: [
       {
-        reference: 'PROD001',
-        internalCode: 'INT001',
-        name: 'Ordinateur Portable HP EliteBook',
-        stock: 15,
-        minStock: 5,
-        purchasePrice: 8000,
-        marginPercent: 25,
-        salePrice: 10000,
-        discount: 5,
-        vat: 20,
-        categoryId: categoryList[1].id,
-      },
-      {
-        reference: 'PROD002',
-        internalCode: 'INT002',
-        name: 'Smartphone Samsung Galaxy S24',
-        stock: 30,
+        reference: 'COF001',
+        internalCode: 'COF001',
+        name: 'Espresso',
+        stock: 50,
         minStock: 10,
-        purchasePrice: 6000,
-        marginPercent: 30,
-        salePrice: 7800,
+        purchasePrice: 2.5,
+        marginPercent: 40,
+        salePrice: 3.5,
         discount: 0,
         vat: 20,
-        categoryId: categoryList[0].id,
+        categoryId: categoryMap.get('Coffee') as number,
       },
       {
-        reference: 'PROD003',
-        internalCode: 'INT003',
-        name: 'Imprimante Canon',
-        stock: 8,
-        minStock: 3,
-        purchasePrice: 3000,
-        marginPercent: 20,
-        salePrice: 3600,
-        discount: 10,
+        reference: 'COF002',
+        internalCode: 'COF002',
+        name: 'Latte',
+        stock: 45,
+        minStock: 10,
+        purchasePrice: 3.0,
+        marginPercent: 50,
+        salePrice: 4.5,
+        discount: 0,
         vat: 20,
-        categoryId: categoryList[1].id,
+        categoryId: categoryMap.get('Coffee') as number,
+      },
+      {
+        reference: 'COF003',
+        internalCode: 'COF003',
+        name: 'Cappuccino',
+        stock: 40,
+        minStock: 10,
+        purchasePrice: 2.8,
+        marginPercent: 43,
+        salePrice: 4.0,
+        discount: 0,
+        vat: 20,
+        categoryId: categoryMap.get('Coffee') as number,
+      },
+      {
+        reference: 'COF004',
+        internalCode: 'COF004',
+        name: 'Americano',
+        stock: 55,
+        minStock: 10,
+        purchasePrice: 2.0,
+        marginPercent: 50,
+        salePrice: 3.0,
+        discount: 0,
+        vat: 20,
+        categoryId: categoryMap.get('Coffee') as number,
+      },
+      {
+        reference: 'PAS001',
+        internalCode: 'PAS001',
+        name: 'Croissant',
+        stock: 30,
+        minStock: 5,
+        purchasePrice: 1.5,
+        marginPercent: 67,
+        salePrice: 2.5,
+        discount: 0,
+        vat: 10,
+        categoryId: categoryMap.get('Pastry') as number,
+      },
+      {
+        reference: 'PAS002',
+        internalCode: 'PAS002',
+        name: 'Danish Pastry',
+        stock: 25,
+        minStock: 5,
+        purchasePrice: 1.8,
+        marginPercent: 67,
+        salePrice: 3.0,
+        discount: 0,
+        vat: 10,
+        categoryId: categoryMap.get('Pastry') as number,
+      },
+      {
+        reference: 'DES001',
+        internalCode: 'DES001',
+        name: 'Chocolate Cake',
+        stock: 20,
+        minStock: 5,
+        purchasePrice: 3.0,
+        marginPercent: 67,
+        salePrice: 5.0,
+        discount: 0,
+        vat: 10,
+        categoryId: categoryMap.get('Dessert') as number,
+      },
+      {
+        reference: 'DES002',
+        internalCode: 'DES002',
+        name: 'Cheesecake',
+        stock: 18,
+        minStock: 5,
+        purchasePrice: 3.3,
+        marginPercent: 67,
+        salePrice: 5.5,
+        discount: 0,
+        vat: 10,
+        categoryId: categoryMap.get('Dessert') as number,
+      },
+      {
+        reference: 'TEA001',
+        internalCode: 'TEA001',
+        name: 'Green Tea',
+        stock: 35,
+        minStock: 10,
+        purchasePrice: 2.0,
+        marginPercent: 50,
+        salePrice: 3.0,
+        discount: 0,
+        vat: 20,
+        categoryId: categoryMap.get('Tea') as number,
+      },
+      {
+        reference: 'TEA002',
+        internalCode: 'TEA002',
+        name: 'Black Tea',
+        stock: 40,
+        minStock: 10,
+        purchasePrice: 1.8,
+        marginPercent: 39,
+        salePrice: 2.5,
+        discount: 0,
+        vat: 20,
+        categoryId: categoryMap.get('Tea') as number,
+      },
+      {
+        reference: 'BEV001',
+        internalCode: 'BEV001',
+        name: 'Orange Juice',
+        stock: 30,
+        minStock: 10,
+        purchasePrice: 2.5,
+        marginPercent: 60,
+        salePrice: 4.0,
+        discount: 0,
+        vat: 20,
+        categoryId: categoryMap.get('Beverage') as number,
+      },
+      {
+        reference: 'COF005',
+        internalCode: 'COF005',
+        name: 'Iced Coffee',
+        stock: 35,
+        minStock: 10,
+        purchasePrice: 3.0,
+        marginPercent: 50,
+        salePrice: 4.5,
+        discount: 0,
+        vat: 20,
+        categoryId: categoryMap.get('Coffee') as number,
       },
     ],
   });
   const productList = await prisma.product.findMany();
-  console.log('📦 Created products');
+  console.log('📦 Created POS products');
 
   // ----------------------
   // DRIVERS

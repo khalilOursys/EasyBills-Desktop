@@ -19,7 +19,7 @@ type Brand = {
 };
 
 const fetchBrands = async (): Promise<Brand[]> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands`);
   if (!res.ok) throw new Error("Failed to fetch brands");
   return res.json();
 };
@@ -67,7 +67,7 @@ export default function BrandsPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/brands/${selectedBrand.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}brands/${selectedBrand.id}`,
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error("Delete failed");

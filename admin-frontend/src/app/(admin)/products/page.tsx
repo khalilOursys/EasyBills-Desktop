@@ -34,7 +34,7 @@ type Product = {
 };
 
 const fetchProducts = async (): Promise<Product[]> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}products`);
   if (!res.ok) throw new Error("Failed to fetch products");
   return res.json();
 };
@@ -82,7 +82,7 @@ export default function ProductsPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/products/${selectedProduct.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}products/${selectedProduct.id}`,
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error("Delete failed");

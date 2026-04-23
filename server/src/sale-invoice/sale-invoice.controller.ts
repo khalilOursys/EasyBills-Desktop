@@ -9,6 +9,7 @@ import {
   Query,
   ParseIntPipe,
   BadRequestException,
+  Put,
 } from '@nestjs/common';
 import { SaleInvoiceService } from './sale-invoice.service';
 import { CreateSaleInvoiceDto } from './dto/create-sale-invoice.dto';
@@ -78,7 +79,7 @@ export class SaleInvoiceController {
     return this.saleInvoiceService.findByClient(clientId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSaleInvoiceDto: UpdateSaleInvoiceDto,
@@ -86,7 +87,7 @@ export class SaleInvoiceController {
     return this.saleInvoiceService.update(id, updateSaleInvoiceDto);
   }
 
-  @Patch(':id/status')
+  @Put(':id/status')
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateStatusDto: UpdateStatusDto,

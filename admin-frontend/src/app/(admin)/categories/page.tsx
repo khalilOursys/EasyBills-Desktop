@@ -18,7 +18,7 @@ type Category = {
 };
 
 const fetchCategories = async (): Promise<Category[]> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}categories`);
   if (!res.ok) throw new Error("Failed to fetch categories");
   return res.json();
 };
@@ -66,7 +66,7 @@ export default function CategoriesPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/categories/${selectedCategory.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}categories/${selectedCategory.id}`,
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error("Delete failed");
