@@ -36,25 +36,25 @@ interface Product {
 }
 
 const fetchCategories = async (): Promise<Category[]> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}categories`);
   if (!response.ok) throw new Error("Failed to fetch categories");
   return response.json();
 };
 
 const fetchBrands = async (): Promise<Brand[]> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands`);
   if (!response.ok) throw new Error("Failed to fetch brands");
   return response.json();
 };
 
 const fetchProduct = async (id: string): Promise<Product> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}products/${id}`);
   if (!response.ok) throw new Error("Failed to fetch product");
   return response.json();
 };
 
 const updateProduct = async ({ id, data }: { id: string; data: FormData }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}products/${id}`, {
     method: "PUT",
     body: data,
   });

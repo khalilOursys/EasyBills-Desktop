@@ -24,7 +24,7 @@ type Supplier = {
 };
 
 const fetchSuppliers = async (): Promise<Supplier[]> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/suppliers`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}suppliers`);
   if (!res.ok) throw new Error("Failed to fetch suppliers");
   return res.json();
 };
@@ -72,7 +72,7 @@ export default function SuppliersPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/suppliers/${selectedSupplier.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}suppliers/${selectedSupplier.id}`,
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error("Delete failed");

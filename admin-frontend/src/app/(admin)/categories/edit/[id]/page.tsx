@@ -13,13 +13,13 @@ interface Category {
 }
 
 const fetchCategory = async (id: string): Promise<Category> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}categories/${id}`);
   if (!response.ok) throw new Error("Failed to fetch category");
   return response.json();
 };
 
 const updateCategory = async ({ id, data }: { id: string; data: Partial<Category> }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}categories/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -199,8 +199,8 @@ export default function EditCategoryPage() {
           open={toastOpen}
           onOpenChange={setToastOpen}
           className={`fixed top-20 right-4 w-80 rounded-md p-4 shadow-lg z-50 ${toastType === "success"
-              ? "bg-green-600 dark:bg-green-700 text-white"
-              : "bg-red-600 dark:bg-red-700 text-white"
+            ? "bg-green-600 dark:bg-green-700 text-white"
+            : "bg-red-600 dark:bg-red-700 text-white"
             }`}
           duration={3000}
         >

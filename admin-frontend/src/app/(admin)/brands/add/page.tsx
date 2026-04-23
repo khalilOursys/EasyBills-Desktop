@@ -21,7 +21,7 @@ const uploadImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("image", file);
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands/upload`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands/upload`, {
     method: "POST",
     body: formData,
   });
@@ -41,7 +41,7 @@ const createBrand = async (brandData: {
   description?: string;
   img?: string;
 }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -261,8 +261,8 @@ export default function AddBrandPage() {
           open={toastOpen}
           onOpenChange={setToastOpen}
           className={`fixed top-20 right-4 w-80 rounded-md p-4 shadow-lg z-50 ${toastType === "success"
-              ? "bg-green-600 dark:bg-green-700 text-white"
-              : "bg-red-600 dark:bg-red-700 text-white"
+            ? "bg-green-600 dark:bg-green-700 text-white"
+            : "bg-red-600 dark:bg-red-700 text-white"
             }`}
           duration={3000}
         >

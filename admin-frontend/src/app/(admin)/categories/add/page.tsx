@@ -16,7 +16,7 @@ const addCategory = async (categoryData: {
   name: string;
   description?: string;
 }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}categories`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -168,8 +168,8 @@ export default function AddCategoryPage() {
           open={toastOpen}
           onOpenChange={setToastOpen}
           className={`fixed top-20 right-4 w-80 rounded-md p-4 shadow-lg z-50 ${toastType === "success"
-              ? "bg-green-600 dark:bg-green-700 text-white"
-              : "bg-red-600 dark:bg-red-700 text-white"
+            ? "bg-green-600 dark:bg-green-700 text-white"
+            : "bg-red-600 dark:bg-red-700 text-white"
             }`}
           duration={3000}
         >

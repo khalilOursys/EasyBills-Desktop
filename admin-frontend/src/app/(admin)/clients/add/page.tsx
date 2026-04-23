@@ -24,7 +24,7 @@ const addClient = async (clientData: {
   email?: string;
   cityId?: number;
 }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}clients`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

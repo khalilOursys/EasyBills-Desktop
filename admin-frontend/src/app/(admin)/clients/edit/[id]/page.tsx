@@ -17,13 +17,13 @@ interface Client {
 }
 
 const fetchClient = async (id: string): Promise<Client> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${id}`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}clients/${id}`);
   if (!response.ok) throw new Error("Failed to fetch client");
   return response.json();
 };
 
 const updateClient = async ({ id, data }: { id: string; data: Partial<Client> }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${id}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}clients/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

@@ -17,7 +17,7 @@ interface Brand {
 }
 
 const fetchBrand = async (id: string): Promise<Brand> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands/getBrandById/${id}`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands/getBrandById/${id}`);
   if (!response.ok) throw new Error("Failed to fetch brand");
   return response.json();
 };
@@ -27,7 +27,7 @@ const uploadImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("image", file);
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands/upload`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands/upload`, {
     method: "POST",
     body: formData,
   });
@@ -43,7 +43,7 @@ const uploadImage = async (file: File): Promise<string> => {
 
 // Update brand with new data
 const updateBrand = async ({ id, data }: { id: string; data: Partial<Brand> }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands/${id}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

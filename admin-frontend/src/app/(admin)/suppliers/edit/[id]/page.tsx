@@ -19,13 +19,13 @@ interface Supplier {
 }
 
 const fetchSupplier = async (id: string): Promise<Supplier> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/suppliers/${id}`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}suppliers/${id}`);
   if (!response.ok) throw new Error("Failed to fetch supplier");
   return response.json();
 };
 
 const updateSupplier = async ({ id, data }: { id: string; data: Partial<Supplier> }) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/suppliers/${id}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}suppliers/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

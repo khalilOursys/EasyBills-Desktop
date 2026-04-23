@@ -22,7 +22,7 @@ type Client = {
 };
 
 const fetchClients = async (): Promise<Client[]> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}clients`);
   if (!res.ok) throw new Error("Failed to fetch clients");
   return res.json();
 };
@@ -70,7 +70,7 @@ export default function ClientsPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/clients/${selectedClient.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}clients/${selectedClient.id}`,
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error("Delete failed");
