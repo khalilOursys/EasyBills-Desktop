@@ -17,6 +17,7 @@ import { DriverModule } from './driver/driver.module';
 import { BrandsModule } from './brands/brands.module';
 import { CitiesModule } from './cities/cities.module';
 import { HeroBannerModule } from './hero-banner/hero-banner.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { HeroBannerModule } from './hero-banner/hero-banner.module';
     BrandsModule,
     CitiesModule,
     HeroBannerModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],

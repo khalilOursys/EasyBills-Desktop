@@ -24,6 +24,14 @@ enum PaymentMethod {
   MOBILE_PAYMENT
 }
 
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
 enum PurchaseInvoiceType {
   PURCHASE_ORDER
   PURCHASE_INVOICE
@@ -60,6 +68,7 @@ model User {
   cin        String? 
   role       UserRole  @default(COMMERCIAL)
   createdAt  DateTime  @default(now())
+  orders     Order[]
 }
 
 //////////////////////////////////////
@@ -140,6 +149,7 @@ model Product {
 
   purchaseInvoiceItems PurchaseInvoiceItem[]
   saleInvoiceItems     SaleInvoiceItem[]
+  orderItems    OrderItem[]
 }
 
 //////////////////////////////////////
@@ -366,4 +376,49 @@ model HeroBanner {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model Order {
+  id            Int          @id @default(autoincrement())
+  orderNumber   String       @unique
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  
+  items         OrderItem[]
+  payments      OrderPayment[]
+  
+  subtotal      Float        @default(0)
+  tax           Float        @default(0)
+  total         Float        @default(0)
+  
+  status        OrderStatus  @default(PENDING)
+  tableNumber   String?
+  notes         String?
+  
+  cashierId     Int
+  cashier       User         @relation(fields: [cashierId], references: [id])
+}
+
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  quantity    Int
+  price       Float    @default(0)
+  total       Float    @default(0)
+  
+  orderId     Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id])
+}
+
+model OrderPayment {
+  id            Int           @id @default(autoincrement())
+  amount        Float
+  method        PaymentMethod
+  change        Float?        @default(0)
+  createdAt     DateTime      @default(now())
+  
+  orderId       Int
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }

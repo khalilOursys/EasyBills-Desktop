@@ -18,12 +18,12 @@ export default function ProductGrid({ products, onAddToCart }: ProductGridProps)
                     onClick={() => onAddToCart(product)}
                 >
                     <div className="relative w-full h-40">
-                        <Image
+                        <img
                             src={product.image}
                             alt={product.name}
-                            fill
-                            className="object-cover rounded-t-lg"
+                            className="w-full h-full object-cover rounded-t-lg"
                         />
+
                     </div>
                     <div className="p-4">
                         <h3 className="font-semibold text-gray-800">{product.name}</h3>
