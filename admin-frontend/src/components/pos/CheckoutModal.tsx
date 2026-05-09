@@ -1,9 +1,12 @@
+// components/pos/CheckoutModal.tsx
 'use client';
 
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { CreditCard, DollarSign, Smartphone, X } from 'lucide-react';
 import { CartItem } from '@/app/(admin)/pos/page';
+import { useCreateOrder } from '@/hooks/useOrders';
+import { useToast } from '@/components/providers/ToastProvider';
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -22,27 +25,53 @@ export default function CheckoutModal({
 }: CheckoutModalProps) {
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [cashAmount, setCashAmount] = useState<number>(totalAmount);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [tableNumber, setTableNumber] = useState('');
+    const [notes, setNotes] = useState('');
 
-    const tax = totalAmount * 0.1;
+    const createOrderMutation = useCreateOrder();
+    const { showToast } = useToast();
+
+    const tax = totalAmount * 0.1; // 10% tax
     const grandTotal = totalAmount + tax;
     const change = cashAmount - grandTotal;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsProcessing(true);
 
-        setTimeout(() => {
-            setIsProcessing(false);
+        // Prepare order data according to the Order schema
+        const orderItems = cartItems.map(item => ({
+            productId: item.id,
+            quantity: item.quantity,
+            price: item.price,
+        }));
+
+        const orderData = {
+            items: orderItems,
+            subtotal: totalAmount,
+            tax: tax,
+            total: grandTotal,
+            payment: {
+                amount: paymentMethod === 'cash' ? cashAmount : grandTotal,
+                method: paymentMethod.toUpperCase() as 'CASH' | 'CREDIT_CARD' | 'MOBILE_PAYMENT',
+                change: paymentMethod === 'cash' && cashAmount >= grandTotal ? change : 0,
+            },
+            tableNumber: tableNumber || undefined,
+            notes: notes || undefined,
+        };
+
+        try {
+            await createOrderMutation.mutateAsync(orderData);
+            showToast('Order completed successfully!', 'success');
             onComplete();
-            console.log('Order completed:', { cartItems, totalAmount: grandTotal, paymentMethod });
-        }, 1500);
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Failed to create order', 'error');
+        }
     };
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={onClose}>
             <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset- bg-black/50 backdrop-blur-sm" />
+                <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
                 <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl">
                     <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
                         <Dialog.Title className="text-xl font-semibold text-gray-800">
@@ -81,6 +110,20 @@ export default function CheckoutModal({
                                     <span>${grandTotal.toFixed(2)}</span>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Table Number (Optional) */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Table Number (Optional)
+                            </label>
+                            <input
+                                type="text"
+                                value={tableNumber}
+                                onChange={(e) => setTableNumber(e.target.value)}
+                                placeholder="e.g., 5, 12, Bar"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
                         </div>
 
                         {/* Payment Method */}
@@ -150,6 +193,20 @@ export default function CheckoutModal({
                             </div>
                         )}
 
+                        {/* Notes (Optional) */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Special Instructions (Optional)
+                            </label>
+                            <textarea
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="e.g., No sugar, extra napkins, etc."
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
                         {/* Action Buttons */}
                         <div className="flex gap-3">
                             <Dialog.Close asChild>
@@ -162,10 +219,10 @@ export default function CheckoutModal({
                             </Dialog.Close>
                             <button
                                 type="submit"
-                                disabled={isProcessing || (paymentMethod === 'cash' && cashAmount < grandTotal)}
+                                disabled={createOrderMutation.isPending || (paymentMethod === 'cash' && cashAmount < grandTotal)}
                                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isProcessing ? 'Processing...' : 'Complete Order'}
+                                {createOrderMutation.isPending ? 'Processing...' : 'Complete Order'}
                             </button>
                         </div>
                     </form>

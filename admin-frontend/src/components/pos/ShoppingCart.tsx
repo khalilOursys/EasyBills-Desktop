@@ -50,10 +50,9 @@ export default function ShoppingCart({
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3">
                                         <div className="relative w-12 h-12 rounded-lg overflow-hidden">
-                                            <Image
+                                            <img
                                                 src={item.image}
                                                 alt={item.name}
-                                                fill
                                                 className="object-cover"
                                             />
                                         </div>

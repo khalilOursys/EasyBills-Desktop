@@ -1,16 +1,19 @@
+// app/(admin)/pos/page.tsx
 'use client';
 
 import { useState } from 'react';
 import ProductGrid from '@/components/pos/ProductGrid';
 import ShoppingCart from '@/components/pos/ShoppingCart';
 import CheckoutModal from '@/components/pos/CheckoutModal';
+import { useProducts, useFilterOptions } from '@/hooks/useProducts';
+import { Product as APIProduct } from '@/lib/api/products';
 
 export interface Product {
     id: number;
     name: string;
     price: number;
     category: string;
-    image: string; // This will now be an image URL
+    image: string;
     stock: number;
 }
 
@@ -18,29 +21,25 @@ export interface CartItem extends Product {
     quantity: number;
 }
 
-const sampleProducts: Product[] = [
-    { id: 1, name: 'Espresso', price: 3.50, category: 'Coffee', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=150&h=150&fit=crop', stock: 50 },
-    { id: 2, name: 'Latte', price: 4.50, category: 'Coffee', image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=150&h=150&fit=crop', stock: 45 },
-    { id: 3, name: 'Cappuccino', price: 4.00, category: 'Coffee', image: 'https://images.unsplash.com/photo-1534778101976-62847782c5ce?w=150&h=150&fit=crop', stock: 40 },
-    { id: 4, name: 'Americano', price: 3.00, category: 'Coffee', image: 'https://images.unsplash.com/photo-1551030173-122aabc4489c?w=150&h=150&fit=crop', stock: 55 },
-    { id: 5, name: 'Croissant', price: 2.50, category: 'Pastry', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=150&h=150&fit=crop', stock: 30 },
-    { id: 6, name: 'Danish Pastry', price: 3.00, category: 'Pastry', image: 'https://images.unsplash.com/photo-1571327073757-71c13c5de30d?w=150&h=150&fit=crop', stock: 25 },
-    { id: 7, name: 'Chocolate Cake', price: 5.00, category: 'Dessert', image: 'https://images.unsplash.com/photo-1578985545062-69928b1b9582?w=150&h=150&fit=crop', stock: 20 },
-    { id: 8, name: 'Cheesecake', price: 5.50, category: 'Dessert', image: 'https://images.unsplash.com/photo-1524351199678-882a83a5f6f9?w=150&h=150&fit=crop', stock: 18 },
-    { id: 9, name: 'Green Tea', price: 3.00, category: 'Tea', image: 'https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=150&h=150&fit=crop', stock: 35 },
-    { id: 10, name: 'Black Tea', price: 2.50, category: 'Tea', image: 'https://images.unsplash.com/photo-1597481499750-3e6b8b4f6dfd?w=150&h=150&fit=crop', stock: 40 },
-    { id: 11, name: 'Orange Juice', price: 4.00, category: 'Beverage', image: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=150&h=150&fit=crop', stock: 30 },
-    { id: 12, name: 'Iced Coffee', price: 4.50, category: 'Coffee', image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=150&h=150&fit=crop', stock: 35 },
-];
-
-// Rest of the component remains the same...
 export default function POSPage() {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
-    const categories = ['All', 'Coffee', 'Tea', 'Pastry', 'Dessert', 'Beverage'];
+    // Fetch products with React Query
+    const { data: productsData, isLoading: productsLoading, refetch } = useProducts({
+        search: searchTerm || undefined,
+        categoryNames: selectedCategory !== 'All' ? [selectedCategory] : undefined,
+        page: currentPage,
+        limit: 20,
+    });
+
+    // Fetch filter options
+    const { data: filterOptions, isLoading: filtersLoading } = useFilterOptions();
+
+    const categories = ['All', ...(filterOptions?.categories?.map((cat: any) => cat.name) || [])];
 
     const addToCart = (product: Product) => {
         setCartItems(prevItems => {
@@ -91,13 +90,18 @@ export default function POSPage() {
     const handleCheckoutComplete = () => {
         clearCart();
         setIsCheckoutOpen(false);
+        refetch(); // Refresh products to update stock
     };
 
-    const filteredProducts = sampleProducts.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
+    // Transform API products to frontend format
+    const transformedProducts: Product[] = productsData?.products?.map((apiProduct: APIProduct) => ({
+        id: apiProduct.id,
+        name: apiProduct.name,
+        price: apiProduct.salePrice,
+        category: apiProduct.category?.name || 'Uncategorized',
+        image: apiProduct.img || '/placeholder-image.jpg',
+        stock: apiProduct.stock,
+    })) || [];
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -140,7 +144,37 @@ export default function POSPage() {
 
                     {/* Products Grid */}
                     <div className="flex-1 overflow-y-auto p-6">
-                        <ProductGrid products={filteredProducts} onAddToCart={addToCart} />
+                        {productsLoading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                            </div>
+                        ) : (
+                            <>
+                                <ProductGrid products={transformedProducts} onAddToCart={addToCart} />
+                                {/* Pagination */}
+                                {productsData && productsData.totalPages > 1 && (
+                                    <div className="flex justify-center gap-2 mt-6">
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                                        >
+                                            Previous
+                                        </button>
+                                        <span className="px-3 py-1">
+                                            Page {currentPage} of {productsData.totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(productsData.totalPages, p + 1))}
+                                            disabled={currentPage === productsData.totalPages}
+                                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
 
