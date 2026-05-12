@@ -80,4 +80,8 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsOptional()
+  @IsEnum(['PENDING', 'COMPLETED', 'CANCELLED'])
+  status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
 }

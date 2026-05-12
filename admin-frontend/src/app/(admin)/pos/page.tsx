@@ -5,8 +5,11 @@ import { useState } from 'react';
 import ProductGrid from '@/components/pos/ProductGrid';
 import ShoppingCart from '@/components/pos/ShoppingCart';
 import CheckoutModal from '@/components/pos/CheckoutModal';
+import OrderSelector from '@/components/pos/OrderSelector';
 import { useProducts, useFilterOptions } from '@/hooks/useProducts';
+import { useCreateOrder, useUpdateOrder, useOrders } from '@/hooks/useOrders';
 import { Product as APIProduct } from '@/lib/api/products';
+import { useToast } from '@/components/providers/ToastProvider';
 
 export interface Product {
     id: number;
@@ -27,14 +30,26 @@ export default function POSPage() {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [isOrderSelectorOpen, setIsOrderSelectorOpen] = useState(false);
+    const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
+    const [isUpdateMode, setIsUpdateMode] = useState(false);
+
+    const { showToast } = useToast();
 
     // Fetch products with React Query
-    const { data: productsData, isLoading: productsLoading, refetch } = useProducts({
+    const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useProducts({
         search: searchTerm || undefined,
         categoryNames: selectedCategory !== 'All' ? [selectedCategory] : undefined,
         page: currentPage,
         limit: 20,
     });
+
+    // Fetch orders for selection
+    const { data: ordersData, isLoading: ordersLoading, refetch: refetchOrders } = useOrders(1, 50);
+
+    // Mutations
+    const createOrderMutation = useCreateOrder();
+    const updateOrderMutation = useUpdateOrder();
 
     // Fetch filter options
     const { data: filterOptions, isLoading: filtersLoading } = useFilterOptions();
@@ -87,10 +102,80 @@ export default function POSPage() {
         setIsCheckoutOpen(true);
     };
 
-    const handleCheckoutComplete = () => {
+    const handleCheckoutComplete = async (paymentMethod: 'CASH' | 'CREDIT_CARD' | 'MOBILE_PAYMENT', paymentAmount: number) => {
+        const subtotal = getTotalAmount();
+        const tax = subtotal * 0.1;
+        const total = subtotal + tax;
+
+        const orderData = {
+            items: cartItems.map(item => ({
+                productId: item.id,
+                quantity: item.quantity,
+                price: item.price,
+            })),
+            subtotal: subtotal,
+            tax: tax,
+            total: total,
+            payment: {
+                amount: paymentAmount,
+                method: paymentMethod,
+                change: paymentMethod === 'CASH' ? paymentAmount - total : undefined,
+            },
+            tableNumber: undefined,
+            notes: undefined,
+            cashierId: undefined,
+        };
+
+        try {
+            if (isUpdateMode && editingOrderId) {
+                await updateOrderMutation.mutateAsync({
+                    id: editingOrderId,
+                    data: orderData,
+                });
+                showToast('Order updated successfully!', 'success');
+            } else {
+                await createOrderMutation.mutateAsync(orderData);
+                showToast('Order completed successfully!', 'success');
+            }
+
+            clearCart();
+            setIsCheckoutOpen(false);
+            setIsUpdateMode(false);
+            setEditingOrderId(null);
+            refetchProducts();
+            refetchOrders();
+        } catch (error) {
+            console.error('Order failed:', error);
+            showToast(error instanceof Error ? error.message : 'Failed to process order', 'error');
+        }
+    };
+
+    const handleLoadOrder = (order: any) => {
+        // Load order items into cart
+        console.log(order.items);
+
+        const orderItems: CartItem[] = order.items.map((item: any) => ({
+            id: item.productId,
+            name: item.product?.name || `Product ${item.productId}`,
+            price: item.price,
+            category: item.product?.category?.name || 'Uncategorized',
+            image: item.product?.img || '/placeholder-image.jpg',
+            stock: 999,
+            quantity: item.quantity,
+        }));
+
+        setCartItems(orderItems);
+        setEditingOrderId(order.id);
+        setIsUpdateMode(true);
+        setIsOrderSelectorOpen(false);
+        showToast(`Order #${order.id} loaded for editing`, 'info');
+    };
+
+    const handleCancelUpdate = () => {
         clearCart();
-        setIsCheckoutOpen(false);
-        refetch(); // Refresh products to update stock
+        setIsUpdateMode(false);
+        setEditingOrderId(null);
+        showToast('Update mode cancelled', 'info');
     };
 
     // Transform API products to frontend format
@@ -108,9 +193,40 @@ export default function POSPage() {
             <div className="flex h-screen">
                 {/* Products Section */}
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    {/* Header */}
+                    {/* Header with Load Order Button */}
                     <div className="bg-white border-b border-gray-200 px-6 py-4">
-                        <h1 className="text-2xl font-semibold text-gray-800">Point of Sale</h1>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h1 className="text-2xl font-semibold text-gray-800">Point of Sale</h1>
+                                {isUpdateMode && (
+                                    <p className="text-sm text-blue-600 mt-1">
+                                        Updating Order #{editingOrderId}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex gap-3">
+                                {/* LOAD ORDER BUTTON - This is the button to show other orders */}
+                                <button
+                                    onClick={() => setIsOrderSelectorOpen(true)}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                    Load Order
+                                </button>
+
+                                {/* Cancel Update Button - Only shows when in update mode */}
+                                {isUpdateMode && (
+                                    <button
+                                        onClick={handleCancelUpdate}
+                                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                    >
+                                        Cancel Update
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Search and Filters */}
@@ -151,7 +267,6 @@ export default function POSPage() {
                         ) : (
                             <>
                                 <ProductGrid products={transformedProducts} onAddToCart={addToCart} />
-                                {/* Pagination */}
                                 {productsData && productsData.totalPages > 1 && (
                                     <div className="flex justify-center gap-2 mt-6">
                                         <button
@@ -188,6 +303,7 @@ export default function POSPage() {
                         onCheckout={handleCheckout}
                         totalAmount={getTotalAmount()}
                         itemCount={getItemCount()}
+                        isUpdateMode={isUpdateMode}
                     />
                 </div>
             </div>
@@ -198,6 +314,17 @@ export default function POSPage() {
                 onComplete={handleCheckoutComplete}
                 cartItems={cartItems}
                 totalAmount={getTotalAmount()}
+                isUpdateMode={isUpdateMode}
+                editingOrderId={editingOrderId}
+            />
+
+            {/* OrderSelector Modal - This shows when Load Order button is clicked */}
+            <OrderSelector
+                isOpen={isOrderSelectorOpen}
+                onClose={() => setIsOrderSelectorOpen(false)}
+                orders={ordersData?.orders || []}
+                isLoading={ordersLoading}
+                onSelectOrder={handleLoadOrder}
             />
         </div>
     );

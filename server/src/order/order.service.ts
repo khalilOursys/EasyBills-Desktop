@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -91,6 +92,130 @@ export class OrderService {
     });
   }
 
+  async updateOrder(
+    id: number,
+    updateOrderDto: UpdateOrderDto,
+    cashierId: number,
+  ) {
+    // First, get the existing order
+    const existingOrder = await this.findOne(id);
+
+    if (existingOrder.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot update a completed order');
+    }
+
+    if (existingOrder.status === 'CANCELLED') {
+      throw new BadRequestException('Cannot update a cancelled order');
+    }
+
+    return await this.prisma.$transaction(async (prisma) => {
+      // 1. Restore stock from old items
+      for (const item of existingOrder.items) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+
+      // 2. Check stock availability for new items
+      if (updateOrderDto.items) {
+        for (const item of updateOrderDto.items) {
+          const product = await prisma.product.findUnique({
+            where: { id: item.productId },
+          });
+
+          if (!product) {
+            throw new NotFoundException(
+              `Product with ID ${item.productId} not found`,
+            );
+          }
+
+          if (product.stock < item.quantity) {
+            throw new BadRequestException(
+              `Insufficient stock for product ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`,
+            );
+          }
+        }
+      }
+
+      // 3. Delete old order items
+      await prisma.orderItem.deleteMany({
+        where: { orderId: id },
+      });
+
+      // 4. Delete old payments
+      await prisma.orderPayment.deleteMany({
+        where: { orderId: id },
+      });
+
+      // 5. Update order with new data
+      const updatedOrder = await prisma.order.update({
+        where: { id },
+        data: {
+          subtotal: updateOrderDto.subtotal ?? existingOrder.subtotal,
+          tax: updateOrderDto.tax ?? existingOrder.tax,
+          total: updateOrderDto.total ?? existingOrder.total,
+          tableNumber: updateOrderDto.tableNumber ?? existingOrder.tableNumber,
+          notes: updateOrderDto.notes ?? existingOrder.notes,
+          cashierId: cashierId,
+          status: updateOrderDto.status ?? existingOrder.status,
+          items: {
+            create: (updateOrderDto.items ?? existingOrder.items).map(
+              (item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+                total: item.price * item.quantity,
+              }),
+            ),
+          },
+          payments: {
+            create: {
+              amount:
+                updateOrderDto.payment?.amount ??
+                existingOrder.payments[0]?.amount,
+              method:
+                updateOrderDto.payment?.method ??
+                existingOrder.payments[0]?.method,
+              change:
+                updateOrderDto.payment?.change ??
+                existingOrder.payments[0]?.change ??
+                0,
+            },
+          },
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          payments: true,
+          cashier: true,
+        },
+      });
+
+      // 6. Deduct new stock
+      const itemsToDeduct = updateOrderDto.items ?? existingOrder.items;
+      for (const item of itemsToDeduct) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+
+      return updatedOrder;
+    });
+  }
+
   async findAll(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
 
@@ -107,6 +232,7 @@ export class OrderService {
                   id: true,
                   name: true,
                   img: true,
+                  category: true,
                 },
               },
             },
@@ -146,6 +272,7 @@ export class OrderService {
                 name: true,
                 img: true,
                 reference: true,
+                category: true,
               },
             },
           },

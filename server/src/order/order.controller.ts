@@ -15,6 +15,7 @@ import {
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderService } from './order.service';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Controller('orders')
 export class OrderController {
@@ -28,6 +29,16 @@ export class OrderController {
     // Get cashier ID from session/JWT (default to 1 for now)
     const cashierId = req.user?.id || 1;
     return await this.ordersService.create(createOrderDto, cashierId);
+  }
+
+  @Put(':id')
+  async updateOrder(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) updateOrderDto: UpdateOrderDto,
+    @Req() req: any,
+  ) {
+    const cashierId = req.user?.id || 1;
+    return await this.ordersService.updateOrder(id, updateOrderDto, cashierId);
   }
 
   @Get()
