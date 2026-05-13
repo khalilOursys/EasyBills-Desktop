@@ -20,7 +20,14 @@ export const useCreateOrder = () => {
         },
     });
 };
-
+export const useOrderById = (id: number | null) => {
+  return useQuery<OrderResponse>({
+    queryKey: ['order', id],
+    queryFn: () => getOrderById(id!),
+    enabled: !!id, // Only fetch when id is provided
+    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+  });
+};
 export const useUpdateOrder = () => {
     const queryClient = useQueryClient();
     

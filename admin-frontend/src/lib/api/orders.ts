@@ -29,9 +29,11 @@ export interface OrderResponse {
     subtotal: number;
     tax: number;
     total: number;
+    tableNumber?: string;
+    notes?: string;
     status: string;
     items: OrderItem[];
-    payments: OrderPayment[];
+    orderPayments: OrderPayment[];
 }
 
 export async function createOrder(orderData: CreateOrderDto): Promise<OrderResponse> {
