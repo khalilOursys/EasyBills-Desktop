@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class OrderService {
@@ -35,6 +36,21 @@ export class OrderService {
         }
       }
 
+      // Calculate total price of all items
+      const itemsTotalPrice = createOrderDto.items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
+      const itemsTotalPriceWithTax =
+        itemsTotalPrice + (createOrderDto.tax || 0);
+      // Determine order status based on comparison
+      /* const orderStatus =
+        itemsTotalPriceWithTax < createOrderDto.total ? 'PENDING' : 'COMPLETED'; */
+      const orderStatus =
+        createOrderDto.payment.amount >= itemsTotalPriceWithTax
+          ? OrderStatus.COMPLETED
+          : OrderStatus.PENDING;
+
       // 2. Generate order number
       const orderNumber = await this.generateOrderNumber(prisma);
 
@@ -48,7 +64,7 @@ export class OrderService {
           tableNumber: createOrderDto.tableNumber,
           notes: createOrderDto.notes,
           cashierId: cashierId,
-          status: 'COMPLETED', // Auto-complete for POS
+          status: orderStatus, // Dynamic status based on price comparison
           items: {
             create: createOrderDto.items.map((item) => ({
               productId: item.productId,
@@ -57,7 +73,7 @@ export class OrderService {
               total: item.price * item.quantity,
             })),
           },
-          payments: {
+          orderPayments: {
             create: {
               amount: createOrderDto.payment.amount,
               method: createOrderDto.payment.method,
@@ -71,7 +87,7 @@ export class OrderService {
               product: true,
             },
           },
-          payments: true,
+          orderPayments: true,
           cashier: true,
         },
       });
@@ -152,38 +168,58 @@ export class OrderService {
         where: { orderId: id },
       });
 
+      // Get the items to be used (new or existing)
+      const itemsToUse = updateOrderDto.items ?? existingOrder.items;
+
+      // Calculate total price of items
+      const itemsTotalPrice = itemsToUse.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
+
+      // Get the total amount (new or existing)
+      const orderTotal = updateOrderDto.total ?? existingOrder.total;
+      const tax = updateOrderDto.tax ?? existingOrder.tax;
+
+      // Add tax to get items total price with tax
+      const itemsTotalPriceWithTax = itemsTotalPrice + tax;
+      // Determine order status based on comparison
+      const orderStatus = updateOrderDto.payment
+        ? updateOrderDto.payment.amount >= itemsTotalPriceWithTax
+          ? OrderStatus.COMPLETED
+          : OrderStatus.PENDING
+        : OrderStatus.PENDING;
+
       // 5. Update order with new data
       const updatedOrder = await prisma.order.update({
         where: { id },
         data: {
           subtotal: updateOrderDto.subtotal ?? existingOrder.subtotal,
           tax: updateOrderDto.tax ?? existingOrder.tax,
-          total: updateOrderDto.total ?? existingOrder.total,
+          total: orderTotal,
           tableNumber: updateOrderDto.tableNumber ?? existingOrder.tableNumber,
           notes: updateOrderDto.notes ?? existingOrder.notes,
           cashierId: cashierId,
-          status: updateOrderDto.status ?? existingOrder.status,
+          status: orderStatus, // Use calculated status if no explicit status provided
           items: {
-            create: (updateOrderDto.items ?? existingOrder.items).map(
-              (item) => ({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.price,
-                total: item.price * item.quantity,
-              }),
-            ),
+            create: itemsToUse.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.price * item.quantity,
+            })),
           },
-          payments: {
+          orderPayments: {
             create: {
               amount:
                 updateOrderDto.payment?.amount ??
-                existingOrder.payments[0]?.amount,
+                existingOrder.orderPayments[0]?.amount,
               method:
                 updateOrderDto.payment?.method ??
-                existingOrder.payments[0]?.method,
+                existingOrder.orderPayments[0]?.method,
               change:
                 updateOrderDto.payment?.change ??
-                existingOrder.payments[0]?.change ??
+                existingOrder.orderPayments[0]?.change ??
                 0,
             },
           },
@@ -194,14 +230,13 @@ export class OrderService {
               product: true,
             },
           },
-          payments: true,
+          orderPayments: true,
           cashier: true,
         },
       });
 
       // 6. Deduct new stock
-      const itemsToDeduct = updateOrderDto.items ?? existingOrder.items;
-      for (const item of itemsToDeduct) {
+      for (const item of itemsToUse) {
         await prisma.product.update({
           where: { id: item.productId },
           data: {
@@ -237,7 +272,7 @@ export class OrderService {
               },
             },
           },
-          payments: true,
+          orderPayments: true,
           cashier: {
             select: {
               id: true,
@@ -277,7 +312,7 @@ export class OrderService {
             },
           },
         },
-        payments: true,
+        orderPayments: true,
         cashier: {
           select: {
             id: true,
@@ -305,7 +340,7 @@ export class OrderService {
             product: true,
           },
         },
-        payments: true,
+        orderPayments: true,
         cashier: true,
       },
     });

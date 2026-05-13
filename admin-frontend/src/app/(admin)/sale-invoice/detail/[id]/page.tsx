@@ -410,7 +410,6 @@ function SaleInvoiceDetails() {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
-                console.log(companyLogo);
 
                 img.src = companyLogo;
                 img.onload = () => {

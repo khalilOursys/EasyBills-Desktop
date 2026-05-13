@@ -385,7 +385,7 @@ model Order {
   updatedAt     DateTime     @updatedAt
   
   items         OrderItem[]
-  payments      OrderPayment[]
+  orderPayments OrderPayment[]
   
   subtotal      Float        @default(0)
   tax           Float        @default(0)

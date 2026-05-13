@@ -127,7 +127,7 @@ export default function POSPage() {
         };
 
         try {
-            if (isUpdateMode && editingOrderId) {
+            /* if (isUpdateMode && editingOrderId) {
                 await updateOrderMutation.mutateAsync({
                     id: editingOrderId,
                     data: orderData,
@@ -136,7 +136,7 @@ export default function POSPage() {
             } else {
                 await createOrderMutation.mutateAsync(orderData);
                 showToast('Order completed successfully!', 'success');
-            }
+            } */
 
             clearCart();
             setIsCheckoutOpen(false);
@@ -151,8 +151,7 @@ export default function POSPage() {
     };
 
     const handleLoadOrder = (order: any) => {
-        // Load order items into cart
-        console.log(order.items);
+        // Load order items into cart 
 
         const orderItems: CartItem[] = order.items.map((item: any) => ({
             id: item.productId,
@@ -317,7 +316,6 @@ export default function POSPage() {
                 isUpdateMode={isUpdateMode}
                 editingOrderId={editingOrderId}
             />
-
             {/* OrderSelector Modal - This shows when Load Order button is clicked */}
             <OrderSelector
                 isOpen={isOrderSelectorOpen}
