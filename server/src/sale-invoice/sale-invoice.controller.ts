@@ -49,8 +49,8 @@ export class SaleInvoiceController {
       case 'DELIVERY_NOTE':
         invoiceType = SaleInvoiceType.DELIVERY_NOTE;
         break;
-      case 'SHIPPING_NOTE_INVOICE':
-        invoiceType = SaleInvoiceType.SHIPPING_NOTE_INVOICE;
+      case 'QUOTATION':
+        invoiceType = SaleInvoiceType.QUOTATION;
         break;
       default:
         throw new BadRequestException(`Invalid invoice type: ${type}`);

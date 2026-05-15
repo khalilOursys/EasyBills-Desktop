@@ -15,9 +15,8 @@ export class OrderService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createOrderDto: CreateOrderDto, cashierId: number) {
-    // Start transaction
     return await this.prisma.$transaction(async (prisma) => {
-      // 1. Check stock availability
+      // Check stock availability
       for (const item of createOrderDto.items) {
         const product = await prisma.product.findUnique({
           where: { id: item.productId },
@@ -36,35 +35,60 @@ export class OrderService {
         }
       }
 
-      // Calculate total price of all items
-      const itemsTotalPrice = createOrderDto.items.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0,
-      );
-      const itemsTotalPriceWithTax =
-        itemsTotalPrice + (createOrderDto.tax || 0);
-      // Determine order status based on comparison
-      /* const orderStatus =
-        itemsTotalPriceWithTax < createOrderDto.total ? 'PENDING' : 'COMPLETED'; */
+      // Use values from frontend
+      const subtotal = createOrderDto.subtotal;
+      const discountPercent = createOrderDto.discountPercent || 0;
+      const discountAmount =
+        createOrderDto.discountAmount || (subtotal * discountPercent) / 100;
+      const discountedSubtotal =
+        createOrderDto.discountedSubtotal || subtotal - discountAmount;
+      const tax = createOrderDto.tax;
+      const total = createOrderDto.total;
+
+      // Validate total calculation
+      const calculatedTotal = discountedSubtotal + tax;
+      if (Math.abs(total - calculatedTotal) > 0.01) {
+        throw new BadRequestException(
+          `Total amount mismatch. Expected: ${calculatedTotal}, Got: ${total}`,
+        );
+      }
+
+      // Validate client if provided
+      if (createOrderDto.clientId) {
+        const client = await prisma.client.findUnique({
+          where: { id: createOrderDto.clientId },
+        });
+        if (!client) {
+          throw new NotFoundException(
+            `Client with ID ${createOrderDto.clientId} not found`,
+          );
+        }
+      }
+
+      // Determine order status
       const orderStatus =
-        createOrderDto.payment.amount >= itemsTotalPriceWithTax
+        createOrderDto.payment.amount >= total
           ? OrderStatus.COMPLETED
           : OrderStatus.PENDING;
 
-      // 2. Generate order number
+      // Generate order number
       const orderNumber = await this.generateOrderNumber(prisma);
 
-      // 3. Create order
+      // Create order
       const order = await prisma.order.create({
         data: {
           orderNumber,
-          subtotal: createOrderDto.subtotal,
-          tax: createOrderDto.tax,
-          total: createOrderDto.total,
+          subtotal,
+          discountPercent,
+          discountAmount,
+          discountedSubtotal,
+          tax,
+          total,
           tableNumber: createOrderDto.tableNumber,
           notes: createOrderDto.notes,
           cashierId: cashierId,
-          status: orderStatus, // Dynamic status based on price comparison
+          clientId: createOrderDto.clientId || null,
+          status: orderStatus,
           items: {
             create: createOrderDto.items.map((item) => ({
               productId: item.productId,
@@ -89,10 +113,11 @@ export class OrderService {
           },
           orderPayments: true,
           cashier: true,
+          client: true,
         },
       });
 
-      // 4. Update product stock
+      // Update product stock
       for (const item of createOrderDto.items) {
         await prisma.product.update({
           where: { id: item.productId },
@@ -113,7 +138,6 @@ export class OrderService {
     updateOrderDto: UpdateOrderDto,
     cashierId: number,
   ) {
-    // First, get the existing order
     const existingOrder = await this.findOne(id);
 
     if (existingOrder.status === 'COMPLETED') {
@@ -125,7 +149,7 @@ export class OrderService {
     }
 
     return await this.prisma.$transaction(async (prisma) => {
-      // 1. Restore stock from old items
+      // Restore stock from old items
       for (const item of existingOrder.items) {
         await prisma.product.update({
           where: { id: item.productId },
@@ -137,9 +161,11 @@ export class OrderService {
         });
       }
 
-      // 2. Check stock availability for new items
+      // Check stock availability for new items
       if (updateOrderDto.items) {
         for (const item of updateOrderDto.items) {
+          if (!item.productId) continue;
+
           const product = await prisma.product.findUnique({
             where: { id: item.productId },
           });
@@ -150,7 +176,7 @@ export class OrderService {
             );
           }
 
-          if (product.stock < item.quantity) {
+          if (product.stock < (item.quantity || 0)) {
             throw new BadRequestException(
               `Insufficient stock for product ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`,
             );
@@ -158,49 +184,63 @@ export class OrderService {
         }
       }
 
-      // 3. Delete old order items
-      await prisma.orderItem.deleteMany({
-        where: { orderId: id },
-      });
+      // Delete old order items and payments
+      await prisma.orderItem.deleteMany({ where: { orderId: id } });
+      await prisma.orderPayment.deleteMany({ where: { orderId: id } });
 
-      // 4. Delete old payments
-      await prisma.orderPayment.deleteMany({
-        where: { orderId: id },
-      });
+      // Prepare items and calculate values
+      const itemsToUse =
+        updateOrderDto.items ||
+        existingOrder.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        }));
 
-      // Get the items to be used (new or existing)
-      const itemsToUse = updateOrderDto.items ?? existingOrder.items;
-
-      // Calculate total price of items
-      const itemsTotalPrice = itemsToUse.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0,
-      );
-
-      // Get the total amount (new or existing)
-      const orderTotal = updateOrderDto.total ?? existingOrder.total;
+      const subtotal = updateOrderDto.subtotal ?? existingOrder.subtotal;
+      const discountPercent =
+        updateOrderDto.discountPercent ?? existingOrder.discountPercent;
+      const discountAmount =
+        updateOrderDto.discountAmount ?? (subtotal * discountPercent) / 100;
+      const discountedSubtotal =
+        updateOrderDto.discountedSubtotal ?? subtotal - discountAmount;
       const tax = updateOrderDto.tax ?? existingOrder.tax;
+      const total = updateOrderDto.total ?? discountedSubtotal + tax;
 
-      // Add tax to get items total price with tax
-      const itemsTotalPriceWithTax = itemsTotalPrice + tax;
-      // Determine order status based on comparison
-      const orderStatus = updateOrderDto.payment
-        ? updateOrderDto.payment.amount >= itemsTotalPriceWithTax
-          ? OrderStatus.COMPLETED
-          : OrderStatus.PENDING
-        : OrderStatus.PENDING;
+      // Validate client
+      const clientId = updateOrderDto.clientId ?? existingOrder.clientId;
+      if (clientId) {
+        const client = await prisma.client.findUnique({
+          where: { id: clientId },
+        });
+        if (!client) {
+          throw new NotFoundException(`Client with ID ${clientId} not found`);
+        }
+      }
 
-      // 5. Update order with new data
+      // Determine order status
+      const paymentAmount =
+        updateOrderDto.payment?.amount ??
+        existingOrder.orderPayments[0]?.amount ??
+        0;
+      const orderStatus =
+        paymentAmount >= total ? OrderStatus.COMPLETED : OrderStatus.PENDING;
+
+      // Update order
       const updatedOrder = await prisma.order.update({
         where: { id },
         data: {
-          subtotal: updateOrderDto.subtotal ?? existingOrder.subtotal,
-          tax: updateOrderDto.tax ?? existingOrder.tax,
-          total: orderTotal,
+          subtotal,
+          discountPercent,
+          discountAmount,
+          discountedSubtotal,
+          tax,
+          total,
           tableNumber: updateOrderDto.tableNumber ?? existingOrder.tableNumber,
           notes: updateOrderDto.notes ?? existingOrder.notes,
           cashierId: cashierId,
-          status: orderStatus, // Use calculated status if no explicit status provided
+          clientId: clientId,
+          status: orderStatus,
           items: {
             create: itemsToUse.map((item) => ({
               productId: item.productId,
@@ -211,9 +251,7 @@ export class OrderService {
           },
           orderPayments: {
             create: {
-              amount:
-                updateOrderDto.payment?.amount ??
-                existingOrder.orderPayments[0]?.amount,
+              amount: paymentAmount,
               method:
                 updateOrderDto.payment?.method ??
                 existingOrder.orderPayments[0]?.method,
@@ -232,10 +270,11 @@ export class OrderService {
           },
           orderPayments: true,
           cashier: true,
+          client: true,
         },
       });
 
-      // 6. Deduct new stock
+      // Deduct new stock
       for (const item of itemsToUse) {
         await prisma.product.update({
           where: { id: item.productId },
@@ -268,6 +307,7 @@ export class OrderService {
                   name: true,
                   img: true,
                   category: true,
+                  vat: true,
                 },
               },
             },
@@ -278,6 +318,14 @@ export class OrderService {
               id: true,
               firstName: true,
               lastName: true,
+              email: true,
+            },
+          },
+          client: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
               email: true,
             },
           },
@@ -308,6 +356,7 @@ export class OrderService {
                 img: true,
                 reference: true,
                 category: true,
+                vat: true,
               },
             },
           },
@@ -319,6 +368,16 @@ export class OrderService {
             firstName: true,
             lastName: true,
             email: true,
+          },
+        },
+        client: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            address: true,
+            taxNumber: true,
           },
         },
       },
@@ -342,6 +401,7 @@ export class OrderService {
         },
         orderPayments: true,
         cashier: true,
+        client: true,
       },
     });
 
@@ -355,13 +415,11 @@ export class OrderService {
   async updateStatus(id: number, updateStatusDto: UpdateOrderStatusDto) {
     const order = await this.findOne(id);
 
-    // If cancelling order, restore stock
     if (
       updateStatusDto.status === 'CANCELLED' &&
       order.status !== 'CANCELLED'
     ) {
       await this.prisma.$transaction(async (prisma) => {
-        // Restore stock for each item
         for (const item of order.items) {
           await prisma.product.update({
             where: { id: item.productId },
@@ -373,7 +431,6 @@ export class OrderService {
           });
         }
 
-        // Update order status
         await prisma.order.update({
           where: { id },
           data: {
@@ -383,8 +440,7 @@ export class OrderService {
         });
       });
     } else {
-      // Just update status
-      return await this.prisma.order.update({
+      await this.prisma.order.update({
         where: { id },
         data: {
           status: updateStatusDto.status,
@@ -399,7 +455,6 @@ export class OrderService {
   async getTodayStats() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -440,6 +495,37 @@ export class OrderService {
         method: pm.method,
         amount: pm._sum.amount || 0,
       })),
+    };
+  }
+
+  async findByClient(clientId: number, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+
+    const [orders, totalCount] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { clientId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          orderPayments: true,
+          cashier: true,
+        },
+      }),
+      this.prisma.order.count({ where: { clientId } }),
+    ]);
+
+    return {
+      orders,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
     };
   }
 

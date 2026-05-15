@@ -844,20 +844,21 @@ function SaleInvoiceDetails() {
     const getListRoute = (invoiceType: string) => {
         switch (invoiceType) {
             case "DELIVERY_NOTE":
-                return "/sale-invoices/list/DELIVERY_NOTE";
+                return "/sale-invoice/list/DELIVERY_NOTE";
             case "SALE_INVOICE":
-                return "/sale-invoices/list/SALE_INVOICE";
+                return "/sale-invoice/list/SALE_INVOICE";
             case "SHIPPING_NOTE_INVOICE":
-                return "/sale-invoices/list/SHIPPING_NOTE_INVOICE";
+                return "/sale-invoice/list/SHIPPING_NOTE_INVOICE";
             case "QUOTATION":
-                return "/sale-invoices/list/QUOTATION";
+                return "/sale-invoice/list/QUOTATION";
             default:
                 return "/sale-invoice/list";
         }
     };
 
     const getUpdateRoute = (invoiceType: string, invoiceId: string) => {
-        switch (invoiceType) {
+        return `/sale-invoice/edit/${invoiceId}`;
+        /* switch (invoiceType) {
             case "DELIVERY_NOTE":
                 return `/delivery-note/update/${invoiceId}`;
             case "SALE_INVOICE":
@@ -870,7 +871,7 @@ function SaleInvoiceDetails() {
                 return `/refund-invoice/update/${invoiceId}`;
             default:
                 return `/sale-invoice/update/${invoiceId}`;
-        }
+        } */
     };
 
     const handleUpdate = () => {

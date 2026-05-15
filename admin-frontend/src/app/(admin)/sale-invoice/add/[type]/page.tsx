@@ -93,6 +93,8 @@ const getTypeLabel = (typeValue: string) => {
       return "Bon de livraison";
     case "SHIPPING_NOTE_INVOICE":
       return "Facture BL";
+    case "QUOTATION":
+      return "Devis";
     default:
       return typeValue;
   }
@@ -462,8 +464,8 @@ function AddSaleInvoiceContent({ type }: { type: string }) {
                       <tr className="bg-gray-100 dark:bg-gray-800">
                         <th className="border-b p-4 text-left">Produit</th>
                         <th className="border-b p-4 text-left">Quantité</th>
-                        <th className="border-b p-4 text-left">Prix unitaire (€)</th>
-                        <th className="border-b p-4 text-left">Total (€)</th>
+                        <th className="border-b p-4 text-left">Prix unitaire (TND)</th>
+                        <th className="border-b p-4 text-left">Total (TND)</th>
                         <th className="border-b p-4 text-left">Action</th>
                       </tr>
                     </thead>
@@ -516,7 +518,7 @@ function AddSaleInvoiceContent({ type }: { type: string }) {
                               className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-3 py-2 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                             />
                           </td>
-                          <td className="p-4">{item.total.toFixed(2)}</td>
+                          <td className="p-4">{item.total.toFixed(3)}</td>
                           <td className="p-4">
                             <button
                               type="button"
@@ -539,33 +541,33 @@ function AddSaleInvoiceContent({ type }: { type: string }) {
               <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Total HT (€)
+                    Total HT (TND)
                   </label>
                   <input
                     type="text"
-                    value={totalHT.toFixed(2)}
+                    value={totalHT.toFixed(3)}
                     readOnly
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-gray-100 px-5 py-3 outline-none dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                 </div>
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    TVA (19%) (€)
+                    TVA (19%) (TND)
                   </label>
                   <input
                     type="text"
-                    value={(totalTTC - totalHT).toFixed(2)}
+                    value={(totalTTC - totalHT).toFixed(3)}
                     readOnly
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-gray-100 px-5 py-3 outline-none dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                 </div>
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Total TTC (€)
+                    Total TTC (TND)
                   </label>
                   <input
                     type="text"
-                    value={totalTTC.toFixed(2)}
+                    value={totalTTC.toFixed(3)}
                     readOnly
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-gray-100 px-5 py-3 outline-none dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
@@ -584,7 +586,7 @@ function AddSaleInvoiceContent({ type }: { type: string }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-md bg-primary px-6 py-3 font-medium text-white hover:bg-opacity-90 transition-colors"
+                  className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
                   {isSubmitting ? (
                     <>
@@ -605,8 +607,8 @@ function AddSaleInvoiceContent({ type }: { type: string }) {
           open={toastOpen}
           onOpenChange={setToastOpen}
           className={`fixed top-20 right-4 w-80 rounded-md p-4 shadow-lg z-50 ${toastType === "success"
-              ? "bg-green-600 dark:bg-green-700 text-white"
-              : "bg-red-600 dark:bg-red-700 text-white"
+            ? "bg-green-600 dark:bg-green-700 text-white"
+            : "bg-red-600 dark:bg-red-700 text-white"
             }`}
           duration={3000}
         >

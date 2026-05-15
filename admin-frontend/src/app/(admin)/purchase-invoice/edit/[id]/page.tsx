@@ -574,7 +574,7 @@ function EditPurchaseInvoiceContent({ id }: { id: string }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-md bg-primary px-6 py-3 font-medium text-white hover:bg-opacity-90 transition-colors"
+                  className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
                   {isSubmitting ? (
                     <>

@@ -84,6 +84,8 @@ const getTypeLabel = (type: string) => {
       return "Bon de livraison";
     case "SHIPPING_NOTE_INVOICE":
       return "Facture BL";
+    case "QUOTATION":
+      return "Devis";
     default:
       return type;
   }
@@ -288,6 +290,8 @@ export default function ListSaleInvoicePage() {
         return "Nouveau bon de livraison";
       case "SHIPPING_NOTE_INVOICE":
         return "Nouvelle facture BL";
+      case "QUOTATION":
+        return "Nouvelle Devis";
       default:
         return "Nouvelle facture de vente";
     }

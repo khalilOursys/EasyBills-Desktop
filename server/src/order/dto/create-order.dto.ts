@@ -8,15 +8,10 @@ import {
   ValidateNested,
   IsEnum,
   Min,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethod } from '@prisma/client';
-
-/* export enum OrderPaymentMethod {
-  CASH = 'CASH',
-  CREDIT_CARD = 'CREDIT_CARD',
-  MOBILE_PAYMENT = 'MOBILE_PAYMENT',
-} */
 
 export class CreateOrderItemDto {
   @IsNumber()
@@ -58,12 +53,30 @@ export class CreateOrderDto {
   subtotal: number;
 
   @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number;
+
+  @IsNumber()
+  @IsOptional()
+  discountAmount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  discountedSubtotal?: number;
+
+  @IsNumber()
   @IsNotEmpty()
   tax: number;
 
   @IsNumber()
   @IsNotEmpty()
   total: number;
+
+  @IsNumber()
+  @IsOptional()
+  clientId?: number;
 
   @ValidateNested()
   @Type(() => CreateOrderPaymentDto)
@@ -80,8 +93,4 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
-
-  @IsOptional()
-  @IsEnum(['PENDING', 'COMPLETED', 'CANCELLED'])
-  status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
 }

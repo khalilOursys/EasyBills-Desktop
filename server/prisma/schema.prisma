@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -23,7 +25,6 @@ enum PaymentMethod {
   CREDIT_CARD
   MOBILE_PAYMENT
 }
-
 
 enum OrderStatus {
   PENDING
@@ -98,6 +99,7 @@ model Client {
 
   saleInvoices SaleInvoice[]
   payments     Payment[]
+  orders       Order[]
 }
 
 //////////////////////////////////////
@@ -343,7 +345,6 @@ model Car {
   createdAt DateTime @default(now())
 }
 
-
 model Brand {
   id        Int      @id @default(autoincrement())
   name      String    @unique
@@ -388,8 +389,14 @@ model Order {
   orderPayments OrderPayment[]
   
   subtotal      Float        @default(0)
+  discountPercent Float      @default(0)
+  discountAmount Float       @default(0)
+  discountedSubtotal Float   @default(0)
   tax           Float        @default(0)
   total         Float        @default(0)
+  
+  clientId      Int?
+  client        Client?      @relation(fields: [clientId], references: [id])
   
   status        OrderStatus  @default(PENDING)
   tableNumber   String?

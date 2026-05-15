@@ -54,6 +54,15 @@ export class OrderController {
     return await this.ordersService.getTodayStats();
   }
 
+  @Get('client/:clientId')
+  async findByClient(
+    @Param('clientId', ParseIntPipe) clientId: number,
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('limit', ParseIntPipe) limit: number = 10,
+  ) {
+    return await this.ordersService.findByClient(clientId, page, limit);
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.ordersService.findOne(id);

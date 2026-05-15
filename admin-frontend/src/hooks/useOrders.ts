@@ -1,10 +1,16 @@
+// hooks/useOrders.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
     createOrder, 
     getOrders, 
     getOrderById, 
+    getTodayStats, 
+    updateOrder,
+    updateOrderStatus,
+    getOrdersByClient,
     CreateOrderDto, 
-    OrderResponse
+    UpdateOrderDto,
+    OrderResponse 
 } from '@/lib/api/orders';
 
 export const useCreateOrder = () => {
@@ -14,33 +20,37 @@ export const useCreateOrder = () => {
         mutationFn: (orderData: CreateOrderDto) => createOrder(orderData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['today-stats'] });
         },
         onError: (error: Error) => {
             console.error('Failed to create order:', error);
         },
     });
 };
-export const useOrderById = (id: number | null) => {
-  return useQuery<OrderResponse>({
-    queryKey: ['order', id],
-    queryFn: () => getOrderById(id!),
-    enabled: !!id, // Only fetch when id is provided
-    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-  });
-};
+
 export const useUpdateOrder = () => {
     const queryClient = useQueryClient();
     
     return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: Partial<CreateOrderDto> }) => 
+        mutationFn: ({ id, data }: { id: number; data: UpdateOrderDto }) => 
             updateOrder(id, data),
-        onSuccess: (data, variables) => {
+        onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             queryClient.invalidateQueries({ queryKey: ['order', variables.id] });
+            queryClient.invalidateQueries({ queryKey: ['today-stats'] });
         },
         onError: (error: Error) => {
             console.error('Failed to update order:', error);
         },
+    });
+};
+
+export const useOrderById = (id: number | null) => {
+    return useQuery<OrderResponse>({
+        queryKey: ['order', id],
+        queryFn: () => getOrderById(id!),
+        enabled: !!id,
+        staleTime: 5 * 60 * 1000,
     });
 };
 
@@ -52,28 +62,34 @@ export const useOrders = (page?: number, limit?: number) => {
     });
 };
 
-export const useOrder = (id: number) => {
+export const useOrdersByClient = (clientId: number, page: number = 1, limit: number = 10) => {
     return useQuery({
-        queryKey: ['order', id],
-        queryFn: () => getOrderById(id),
-        enabled: !!id,
-        staleTime: 5 * 60 * 1000,
+        queryKey: ['orders', 'client', clientId, page, limit],
+        queryFn: () => getOrdersByClient(clientId, page, limit),
+        enabled: !!clientId,
     });
 };
 
-async function updateOrder(id: number, orderData: Partial<CreateOrderDto>): Promise<OrderResponse> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}orders/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
+export const useTodayStats = () => {
+    return useQuery({
+        queryKey: ['today-stats'],
+        queryFn: () => getTodayStats(),
+        refetchInterval: 30000,
     });
+};
+
+export const useUpdateOrderStatus = () => {
+    const queryClient = useQueryClient();
     
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update order');
-    }
-    
-    return response.json();
-}
+    return useMutation({
+        mutationFn: ({ id, status, notes }: { id: number; status: string; notes?: string }) => 
+            updateOrderStatus(id, status, notes),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['order', variables.id] });
+        },
+        onError: (error: Error) => {
+            console.error('Failed to update order status:', error);
+        },
+    });
+};
