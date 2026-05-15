@@ -8,10 +8,13 @@ import {
   Param,
   Body,
   ParseIntPipe,
+  ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { SearchClientsDto } from './dto/search-clients.dto';
 
 @Controller('clients')
 export class ClientsController {
@@ -25,6 +28,14 @@ export class ClientsController {
   @Get()
   async findAll() {
     return await this.clientsService.findAll();
+  }
+
+  @Get('search')
+  async searchClients(
+    @Query(new ValidationPipe({ transform: true }))
+    searchParams: SearchClientsDto,
+  ) {
+    return await this.clientsService.searchClients(searchParams);
   }
 
   @Get(':id')

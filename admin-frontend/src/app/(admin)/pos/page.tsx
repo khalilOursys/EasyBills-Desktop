@@ -1,4 +1,3 @@
-// app/(admin)/pos/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -18,6 +17,7 @@ export interface Product {
     category: string;
     image: string;
     stock: number;
+    vatRate?: number;
 }
 
 export interface CartItem extends Product {
@@ -36,7 +36,6 @@ export default function POSPage() {
 
     const { showToast } = useToast();
 
-    // Fetch products with React Query
     const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useProducts({
         search: searchTerm || undefined,
         categoryNames: selectedCategory !== 'All' ? [selectedCategory] : undefined,
@@ -44,14 +43,9 @@ export default function POSPage() {
         limit: 20,
     });
 
-    // Fetch orders for selection
     const { data: ordersData, isLoading: ordersLoading, refetch: refetchOrders } = useOrders(1, 50);
-
-    // Mutations
     const createOrderMutation = useCreateOrder();
     const updateOrderMutation = useUpdateOrder();
-
-    // Fetch filter options
     const { data: filterOptions, isLoading: filtersLoading } = useFilterOptions();
 
     const categories = ['All', ...(filterOptions?.categories?.map((cat: any) => cat.name) || [])];
@@ -103,41 +97,7 @@ export default function POSPage() {
     };
 
     const handleCheckoutComplete = async (paymentMethod: 'CASH' | 'CREDIT_CARD' | 'MOBILE_PAYMENT', paymentAmount: number) => {
-        const subtotal = getTotalAmount();
-        const tax = subtotal * 0.1;
-        const total = subtotal + tax;
-
-        const orderData = {
-            items: cartItems.map(item => ({
-                productId: item.id,
-                quantity: item.quantity,
-                price: item.price,
-            })),
-            subtotal: subtotal,
-            tax: tax,
-            total: total,
-            payment: {
-                amount: paymentAmount,
-                method: paymentMethod,
-                change: paymentMethod === 'CASH' ? paymentAmount - total : undefined,
-            },
-            tableNumber: undefined,
-            notes: undefined,
-            cashierId: undefined,
-        };
-
         try {
-            /* if (isUpdateMode && editingOrderId) {
-                await updateOrderMutation.mutateAsync({
-                    id: editingOrderId,
-                    data: orderData,
-                });
-                showToast('Order updated successfully!', 'success');
-            } else {
-                await createOrderMutation.mutateAsync(orderData);
-                showToast('Order completed successfully!', 'success');
-            } */
-
             clearCart();
             setIsCheckoutOpen(false);
             setIsUpdateMode(false);
@@ -151,8 +111,6 @@ export default function POSPage() {
     };
 
     const handleLoadOrder = (order: any) => {
-        // Load order items into cart 
-
         const orderItems: CartItem[] = order.items.map((item: any) => ({
             id: item.productId,
             name: item.product?.name || `Product ${item.productId}`,
@@ -160,6 +118,7 @@ export default function POSPage() {
             category: item.product?.category?.name || 'Uncategorized',
             image: item.product?.img || '/placeholder-image.jpg',
             stock: 999,
+            vatRate: item.product?.vat || 19,
             quantity: item.quantity,
         }));
 
@@ -177,7 +136,6 @@ export default function POSPage() {
         showToast('Update mode cancelled', 'info');
     };
 
-    // Transform API products to frontend format
     const transformedProducts: Product[] = productsData?.products?.map((apiProduct: APIProduct) => ({
         id: apiProduct.id,
         name: apiProduct.name,
@@ -185,6 +143,7 @@ export default function POSPage() {
         category: apiProduct.category?.name || 'Uncategorized',
         image: apiProduct.img || '/placeholder-image.jpg',
         stock: apiProduct.stock,
+        vatRate: apiProduct.vat || 19,
     })) || [];
 
     return (
@@ -204,7 +163,6 @@ export default function POSPage() {
                                 )}
                             </div>
                             <div className="flex gap-3">
-                                {/* LOAD ORDER BUTTON - This is the button to show other orders */}
                                 <button
                                     onClick={() => setIsOrderSelectorOpen(true)}
                                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
@@ -215,7 +173,6 @@ export default function POSPage() {
                                     Load Order
                                 </button>
 
-                                {/* Cancel Update Button - Only shows when in update mode */}
                                 {isUpdateMode && (
                                     <button
                                         onClick={handleCancelUpdate}
@@ -316,7 +273,7 @@ export default function POSPage() {
                 isUpdateMode={isUpdateMode}
                 editingOrderId={editingOrderId}
             />
-            {/* OrderSelector Modal - This shows when Load Order button is clicked */}
+
             <OrderSelector
                 isOpen={isOrderSelectorOpen}
                 onClose={() => setIsOrderSelectorOpen(false)}

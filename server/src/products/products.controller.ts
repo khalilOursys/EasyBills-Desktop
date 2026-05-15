@@ -44,7 +44,7 @@ export class ProductsController {
       }
 
       return await this.productsService.create(createProductDto, imageUrl);
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(error.message);
     }
   }
@@ -94,7 +94,7 @@ export class ProductsController {
       }
 
       return await this.productsService.update(id, updateProductDto, imageUrl);
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(error.message);
     }
   }

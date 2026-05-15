@@ -62,7 +62,7 @@ const navItems: NavItem[] = [
     name: "Purchase Invoices",
     icon: <BoxCubeIcon />,
     subItems: [
-      { name: "All Purchase Invoices", path: "/purchase-invoice/list/PURCHASE_INVOICE" },
+      { name: "Purchase Invoices", path: "/purchase-invoice/list/PURCHASE_INVOICE" },
       { name: "Purchase Orders", path: "/purchase-invoice/list/PURCHASE_ORDER" },
       { name: "Purchase Refunds", path: "/purchase-invoice/list/PURCHASE_REFUND" },
     ],
@@ -72,9 +72,9 @@ const navItems: NavItem[] = [
     name: "Sale Invoices",
     icon: <TableIcon />,
     subItems: [
-      { name: "All Sale Invoices", path: "/sale-invoice/list/SALE_INVOICE" },
+      { name: "Sale Invoices", path: "/sale-invoice/list/SALE_INVOICE" },
       { name: "Delivery Notes", path: "/sale-invoice/list/DELIVERY_NOTE" },
-      { name: "Shipping Note Invoices", path: "/sale-invoice/list/SHIPPING_NOTE_INVOICE" },
+      { name: "Quotation", path: "/sale-invoice/list/QUOTATION" },
     ],
   },
 ];
