@@ -18,6 +18,7 @@ import { BrandsModule } from './brands/brands.module';
 import { CitiesModule } from './cities/cities.module';
 import { HeroBannerModule } from './hero-banner/hero-banner.module';
 import { OrderModule } from './order/order.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { OrderModule } from './order/order.module';
     CitiesModule,
     HeroBannerModule,
     OrderModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],
