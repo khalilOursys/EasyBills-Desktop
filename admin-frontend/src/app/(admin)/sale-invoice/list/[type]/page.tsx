@@ -278,7 +278,7 @@ export default function ListSaleInvoicePage() {
       case "DELIVERY_NOTE":
         return "Bons de livraison";
       case "SHIPPING_NOTE_INVOICE":
-        return "Factures BL";
+        return "Factures bon sorties";
       default:
         return "Factures de vente";
     }
@@ -289,7 +289,7 @@ export default function ListSaleInvoicePage() {
       case "DELIVERY_NOTE":
         return "Nouveau bon de livraison";
       case "SHIPPING_NOTE_INVOICE":
-        return "Nouvelle facture BL";
+        return "Nouvelle facture bon sortie";
       case "QUOTATION":
         return "Nouvelle Devis";
       default:

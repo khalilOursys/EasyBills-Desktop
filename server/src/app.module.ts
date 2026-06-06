@@ -40,6 +40,7 @@ import { InventoryModule } from './inventory/inventory.module';
     HeroBannerModule,
     OrderModule,
     InventoryModule,
+    DriverModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],
