@@ -17,7 +17,7 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
-import { ChevronDownIcon, ShoppingCartIcon } from "lucide-react";
+import { ChevronDownIcon, ShoppingCartIcon, CarIcon } from "lucide-react";
 
 type NavItem = {
   name: string;
@@ -36,6 +36,16 @@ const navItems: NavItem[] = [
     name: "Products",
     icon: <BoxCubeIcon />,
     path: "/products",
+  },
+  {
+    name: "Cars",
+    icon: <CarIcon />,
+    path: "/cars",
+  },
+  {
+    name: "Drivers",
+    icon: <UserCircleIcon />,
+    path: "/drivers",
   },
   {
     name: "Brands",
@@ -259,12 +269,17 @@ const AppSidebar: React.FC = () => {
               submenuMatched = true;
             }
           });
+        } else if (nav.path && isActive(nav.path)) {
+          // If a main nav item is active, close any open submenu
+          if (openSubmenu !== null) {
+            setOpenSubmenu(null);
+          }
         }
       });
     });
 
     // If no submenu item matches, close the open submenu
-    if (!submenuMatched) {
+    if (!submenuMatched && openSubmenu !== null) {
       setOpenSubmenu(null);
     }
   }, [pathname, isActive]);
