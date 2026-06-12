@@ -16,7 +16,7 @@ interface Brand {
   updatedAt: string;
 }
 
-// First upload image to get URL
+// D'abord télécharger l'image pour obtenir l'URL
 const uploadImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("image", file);
@@ -28,14 +28,14 @@ const uploadImage = async (file: File): Promise<string> => {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to upload image");
+    throw new Error(error.message || "Échec du téléchargement de l'image");
   }
 
   const data = await response.json();
   return data.url;
 };
 
-// Then create brand with image URL
+// Ensuite créer la marque avec l'URL de l'image
 const createBrand = async (brandData: {
   name: string;
   description?: string;
@@ -51,7 +51,7 @@ const createBrand = async (brandData: {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to create brand");
+    throw new Error(error.message || "Échec de la création de la marque");
   }
 
   return response.json();
@@ -81,11 +81,11 @@ export default function AddBrandPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
-        showToast("Only image files are allowed (jpg, jpeg, png, gif, webp)", "error");
+        showToast("Seuls les fichiers image sont autorisés (jpg, jpeg, png, gif, webp)", "error");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        showToast("Image size must not exceed 5MB", "error");
+        showToast("La taille de l'image ne doit pas dépasser 5 Mo", "error");
         return;
       }
       setImage(file);
@@ -99,13 +99,13 @@ export default function AddBrandPage() {
     mutationFn: createBrand,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      showToast("✅ Brand created successfully", "success");
+      showToast("✅ Marque créée avec succès", "success");
       setTimeout(() => {
         router.push("/brands");
       }, 1500);
     },
     onError: (error: Error) => {
-      showToast(`❌ ${error.message || "Connection problem"}`, "error");
+      showToast(`❌ ${error.message || "Problème de connexion"}`, "error");
     },
     onSettled: () => {
       setIsSubmitting(false);
@@ -117,7 +117,7 @@ export default function AddBrandPage() {
     event.preventDefault();
 
     if (!name) {
-      showToast("Name is required", "error");
+      showToast("Le nom est requis", "error");
       return;
     }
 
@@ -126,20 +126,20 @@ export default function AddBrandPage() {
     try {
       let imageUrl = "";
 
-      // Upload image first if exists
+      // Télécharger l'image d'abord si elle existe
       if (image) {
         setIsUploading(true);
         imageUrl = await uploadImage(image);
       }
 
-      // Create brand with image URL
+      // Créer la marque avec l'URL de l'image
       createBrandMutation.mutate({
         name,
         description: description || undefined,
         img: imageUrl || undefined,
       });
     } catch (error) {
-      showToast(`❌ ${error instanceof Error ? error.message : "Failed to upload image"}`, "error");
+      showToast(`❌ ${error instanceof Error ? error.message : "Échec du téléchargement de l'image"}`, "error");
       setIsSubmitting(false);
       setIsUploading(false);
     }
@@ -152,31 +152,31 @@ export default function AddBrandPage() {
   return (
     <Toast.Provider>
       <div className="p-6">
-        <PageBreadcrumb pageTitle="Add New Brand" />
+        <PageBreadcrumb pageTitle="Ajouter une nouvelle marque" />
 
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handleCancel}
             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            ← Back to List
+            ← Retour à la liste
           </button>
         </div>
 
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
             <h3 className="text-xl font-semibold text-black dark:text-white">
-              Brand Information
+              Informations de la marque
             </h3>
           </div>
 
           <form onSubmit={submitForm}>
             <div className="p-6.5">
               <div className="grid grid-cols-1 gap-6">
-                {/* Name */}
+                {/* Nom */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Name <span className="text-danger">*</span>
+                    Nom <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
@@ -200,10 +200,10 @@ export default function AddBrandPage() {
                   />
                 </div>
 
-                {/* Image Upload */}
+                {/* Téléchargement d'image */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Brand Image
+                    Image de la marque
                   </label>
                   <input
                     type="file"
@@ -212,15 +212,15 @@ export default function AddBrandPage() {
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Accepted formats: JPG, JPEG, PNG, GIF, WEBP (Max: 5MB)
+                    Formats acceptés : JPG, JPEG, PNG, GIF, WEBP (Max : 5 Mo)
                   </p>
 
                   {imagePreview && (
                     <div className="mt-4 text-center">
-                      <p className="mb-2 text-sm font-medium text-black dark:text-white">Preview:</p>
+                      <p className="mb-2 text-sm font-medium text-black dark:text-white">Aperçu :</p>
                       <img
                         src={imagePreview}
-                        alt="Preview"
+                        alt="Aperçu"
                         className="mx-auto max-h-48 rounded-lg border object-contain"
                       />
                     </div>
@@ -228,14 +228,14 @@ export default function AddBrandPage() {
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Boutons */}
               <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={handleCancel}
                   className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
@@ -245,10 +245,10 @@ export default function AddBrandPage() {
                   {isSubmitting || isUploading ? (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent inline-block mr-2"></div>
-                      {isUploading ? "Uploading image..." : "Creating..."}
+                      {isUploading ? "Téléchargement de l'image..." : "Création en cours..."}
                     </>
                   ) : (
-                    "Create Brand"
+                    "Créer la marque"
                   )}
                 </button>
               </div>
@@ -256,7 +256,7 @@ export default function AddBrandPage() {
           </form>
         </div>
 
-        {/* Toast Notifications */}
+        {/* Notifications Toast */}
         <Toast.Root
           open={toastOpen}
           onOpenChange={setToastOpen}
