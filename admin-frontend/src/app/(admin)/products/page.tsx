@@ -6,8 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Toast from "@radix-ui/react-toast";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
-import EditIcon from "@/icons/edit.svg";
-import DeleteIcon from "@/icons/delete.svg";
 import { Pencil, Trash2 } from "lucide-react";
 
 type Product = {
@@ -35,7 +33,7 @@ type Product = {
 
 const fetchProducts = async (): Promise<Product[]> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}products`);
-  if (!res.ok) throw new Error("Failed to fetch products");
+  if (!res.ok) throw new Error("Échec de la récupération des produits");
   return res.json();
 };
 
@@ -85,12 +83,12 @@ export default function ProductsPage() {
         `${process.env.NEXT_PUBLIC_API_URL}products/${selectedProduct.id}`,
         { method: "DELETE" },
       );
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) throw new Error("Échec de la suppression");
 
       await refetch();
-      showToast(`✅ Product ${selectedProduct.name} deleted`);
+      showToast(`✅ Produit ${selectedProduct.name} supprimé`);
     } catch (err) {
-      showToast("❌ Failed to delete product");
+      showToast("❌ Échec de la suppression du produit");
     } finally {
       setDialogOpen(false);
       setSelectedProduct(null);
@@ -100,7 +98,7 @@ export default function ProductsPage() {
   const columns: MRT_ColumnDef<Product>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nom",
       size: 200,
     },
     {
@@ -129,18 +127,18 @@ export default function ProductsPage() {
     },
     {
       accessorKey: "salePrice",
-      header: "Sale Price (DT)",
+      header: "Prix de vente (DT)",
       size: 120,
       Cell: ({ cell }) => `${cell.getValue<number>().toFixed(3)} DT`,
     },
     {
       accessorKey: "categoryName",
-      header: "Category",
+      header: "Catégorie",
       size: 120,
     },
     {
       accessorKey: "brandName",
-      header: "Brand",
+      header: "Marque",
       size: 120,
     },
     {
@@ -149,29 +147,17 @@ export default function ProductsPage() {
       size: 120,
       Cell: ({ row }) => (
         <div className="flex gap-2">
-          {/* <button
-            onClick={() => handleEdit(row.original)}
-            className="px-2 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-md text-xs hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleDelete(row.original)}
-            className="px-2 py-1 bg-red-500 dark:bg-red-600 text-white rounded-md text-xs hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
-          >
-            Delete
-          </button> */}
           <button
             onClick={() => handleEdit(row.original)}
             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-            title="Edit"
+            title="Modifier"
           >
             <Pencil className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleDelete(row.original)}
             className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-            title="Delete"
+            title="Supprimer"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -185,17 +171,17 @@ export default function ProductsPage() {
       <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Products
+            Produits
           </h1>
           <button
             onClick={handleAddProduct}
             className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
           >
-            Add New Product
+            Ajouter un produit
           </button>
         </div>
 
-        {/* MaterialReactTable with dark mode support */}
+        {/* MaterialReactTable avec support du mode sombre */}
         <div className="dark:bg-gray-800 dark:text-white rounded-lg overflow-hidden">
           <MaterialReactTable
             columns={columns}
@@ -260,7 +246,7 @@ export default function ProductsPage() {
             open
             className="bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded-md shadow-lg"
           >
-            <Toast.Title>❌ Failed to fetch products</Toast.Title>
+            <Toast.Title>❌ Échec de la récupération des produits</Toast.Title>
           </Toast.Root>
         )}
 
@@ -278,10 +264,10 @@ export default function ProductsPage() {
             <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
             <Dialog.Content className="fixed top-1/2 left-1/2 w-96 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
               <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                Confirm Delete
+                Confirmer la suppression
               </Dialog.Title>
               <Dialog.Description className="mt-2 text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete{" "}
+                Êtes-vous sûr de vouloir supprimer{" "}
                 <span className="font-semibold">
                   {selectedProduct?.name ?? ""}
                 </span>
@@ -293,13 +279,13 @@ export default function ProductsPage() {
                   onClick={() => setDialogOpen(false)}
                   className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={confirmDelete}
                   className="px-4 py-2 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
                 >
-                  Delete
+                  Supprimer
                 </button>
               </div>
             </Dialog.Content>

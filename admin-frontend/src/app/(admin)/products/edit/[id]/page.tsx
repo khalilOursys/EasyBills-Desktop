@@ -37,19 +37,19 @@ interface Product {
 
 const fetchCategories = async (): Promise<Category[]> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}categories`);
-  if (!response.ok) throw new Error("Failed to fetch categories");
+  if (!response.ok) throw new Error("Échec de la récupération des catégories");
   return response.json();
 };
 
 const fetchBrands = async (): Promise<Brand[]> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands`);
-  if (!response.ok) throw new Error("Failed to fetch brands");
+  if (!response.ok) throw new Error("Échec de la récupération des marques");
   return response.json();
 };
 
 const fetchProduct = async (id: string): Promise<Product> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}products/${id}`);
-  if (!response.ok) throw new Error("Failed to fetch product");
+  if (!response.ok) throw new Error("Échec de la récupération du produit");
   return response.json();
 };
 
@@ -60,7 +60,7 @@ const updateProduct = async ({ id, data }: { id: string; data: FormData }) => {
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to update product");
+    throw new Error(error.message || "Échec de la mise à jour du produit");
   }
   return response.json();
 };
@@ -75,9 +75,7 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// This component is now a regular Client Component (not async)
 export default function EditProductPage({ params }: PageProps) {
-  // Use React.use() to unwrap the promise, or handle the promise with useState/useEffect
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
 
   useEffect(() => {
@@ -192,11 +190,11 @@ function EditProductContent({ id }: { id: string }) {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
-        showToast("Only image files are allowed (jpg, jpeg, png, gif, webp)", "error");
+        showToast("Seuls les fichiers image sont autorisés (jpg, jpeg, png, gif, webp)", "error");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        showToast("Image size must not exceed 5MB", "error");
+        showToast("La taille de l'image ne doit pas dépasser 5 Mo", "error");
         return;
       }
       setImage(file);
@@ -217,11 +215,11 @@ function EditProductContent({ id }: { id: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", id] });
-      showToast("✅ Product updated successfully", "success");
+      showToast("✅ Produit mis à jour avec succès", "success");
       setTimeout(() => router.push("/products"), 1500);
     },
     onError: (error: Error) => {
-      showToast(`❌ ${error.message || "Connection problem"}`, "error");
+      showToast(`❌ ${error.message || "Problème de connexion"}`, "error");
     },
     onSettled: () => setIsSubmitting(false),
   });
@@ -231,19 +229,19 @@ function EditProductContent({ id }: { id: string }) {
     setIsSubmitting(true);
 
     if (!formData.name) {
-      showToast("Name is required", "error");
+      showToast("Le nom est requis", "error");
       setIsSubmitting(false);
       return;
     }
 
     if (formData.purchasePrice <= 0) {
-      showToast("Purchase price must be positive", "error");
+      showToast("Le prix d'achat doit être positif", "error");
       setIsSubmitting(false);
       return;
     }
 
     if (!formData.categoryId) {
-      showToast("Please select a category", "error");
+      showToast("Veuillez sélectionner une catégorie", "error");
       setIsSubmitting(false);
       return;
     }
@@ -275,30 +273,30 @@ function EditProductContent({ id }: { id: string }) {
   return (
     <Toast.Provider>
       <div className="p-6">
-        <PageBreadcrumb pageTitle="Edit Product" />
+        <PageBreadcrumb pageTitle="Modifier le produit" />
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => router.push("/products")}
             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            ← Back to List
+            ← Retour à la liste
           </button>
         </div>
 
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
             <h3 className="text-xl font-semibold text-black dark:text-white">
-              Edit Product
+              Modifier le produit
             </h3>
           </div>
 
           <form onSubmit={submitForm}>
             <div className="p-6.5">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Same form fields as Add Product page */}
+                {/* Référence */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Reference
+                    Référence
                   </label>
                   <input
                     type="text"
@@ -308,9 +306,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Code interne */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Internal Code
+                    Code interne
                   </label>
                   <input
                     type="text"
@@ -320,9 +319,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Nom */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Name <span className="text-danger">*</span>
+                    Nom <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
@@ -333,9 +333,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Catégorie */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Category <span className="text-danger">*</span>
+                    Catégorie <span className="text-danger">*</span>
                   </label>
                   <select
                     required
@@ -343,7 +344,7 @@ function EditProductContent({ id }: { id: string }) {
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   >
-                    <option value="">Select category</option>
+                    <option value="">Sélectionner une catégorie</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -352,16 +353,17 @@ function EditProductContent({ id }: { id: string }) {
                   </select>
                 </div>
 
+                {/* Marque */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Brand
+                    Marque
                   </label>
                   <select
                     value={formData.brandId}
                     onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   >
-                    <option value="">Select brand</option>
+                    <option value="">Sélectionner une marque</option>
                     {brands.map((brand) => (
                       <option key={brand.id} value={brand.id}>
                         {brand.name}
@@ -370,6 +372,7 @@ function EditProductContent({ id }: { id: string }) {
                   </select>
                 </div>
 
+                {/* Stock */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
                     Stock
@@ -383,9 +386,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Stock minimum */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Minimum Stock
+                    Stock minimum
                   </label>
                   <input
                     type="number"
@@ -396,9 +400,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Prix d'achat */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Purchase Price (DT) <span className="text-danger">*</span>
+                    Prix d'achat (DT) <span className="text-danger">*</span>
                   </label>
                   <input
                     type="number"
@@ -414,9 +419,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Marge (%) */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Margin (%)
+                    Marge (%)
                   </label>
                   <input
                     type="number"
@@ -431,9 +437,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Prix de vente */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Sale Price (DT)
+                    Prix de vente (DT)
                   </label>
                   <input
                     type="number"
@@ -445,9 +452,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* Prix TTC */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Price TTC (DT)
+                    Prix TTC (DT)
                   </label>
                   <input
                     type="number"
@@ -458,9 +466,10 @@ function EditProductContent({ id }: { id: string }) {
                   />
                 </div>
 
+                {/* TVA */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    VAT (%)
+                    TVA (%)
                   </label>
                   <select
                     value={formData.vat}
@@ -475,9 +484,10 @@ function EditProductContent({ id }: { id: string }) {
                   </select>
                 </div>
 
+                {/* Remise */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Discount (%)
+                    Remise (%)
                   </label>
                   <input
                     type="number"
@@ -491,6 +501,7 @@ function EditProductContent({ id }: { id: string }) {
                 </div>
               </div>
 
+              {/* Description */}
               <div className="mt-6">
                 <label className="mb-3 block text-sm font-medium text-black dark:text-white">
                   Description
@@ -503,9 +514,10 @@ function EditProductContent({ id }: { id: string }) {
                 />
               </div>
 
+              {/* Téléchargement d'image */}
               <div className="mt-6">
                 <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                  Product Image
+                  Image du produit
                 </label>
                 <input
                   type="file"
@@ -514,28 +526,29 @@ function EditProductContent({ id }: { id: string }) {
                   className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  Accepted formats: JPG, JPEG, PNG, GIF, WEBP (Max: 5MB)
+                  Formats acceptés : JPG, JPEG, PNG, GIF, WEBP (Max : 5 Mo). Laissez vide pour conserver l'image actuelle.
                 </p>
 
                 {(imagePreview || existingImage) && (
                   <div className="mt-4 text-center">
-                    <p className="mb-2 text-sm font-medium text-black dark:text-white">Preview:</p>
+                    <p className="mb-2 text-sm font-medium text-black dark:text-white">Aperçu :</p>
                     <img
                       src={imagePreview || existingImage || ""}
-                      alt="Preview"
+                      alt="Aperçu"
                       className="mx-auto max-h-48 rounded-lg border object-contain"
                     />
                   </div>
                 )}
               </div>
 
+              {/* Boutons */}
               <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={handleCancel}
                   className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
@@ -544,11 +557,11 @@ function EditProductContent({ id }: { id: string }) {
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      Updating...
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent inline-block mr-2"></div>
+                      Mise à jour...
                     </>
                   ) : (
-                    "Update Product"
+                    "Mettre à jour le produit"
                   )}
                 </button>
               </div>

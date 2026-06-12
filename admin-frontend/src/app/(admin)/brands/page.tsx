@@ -20,7 +20,7 @@ type Brand = {
 
 const fetchBrands = async (): Promise<Brand[]> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands`);
-  if (!res.ok) throw new Error("Failed to fetch brands");
+  if (!res.ok) throw new Error("Échec de la récupération des marques");
   return res.json();
 };
 
@@ -70,12 +70,12 @@ export default function BrandsPage() {
         `${process.env.NEXT_PUBLIC_API_URL}brands/${selectedBrand.id}`,
         { method: "DELETE" },
       );
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) throw new Error("Échec de la suppression");
 
       await refetch();
-      showToast(`✅ Brand ${selectedBrand.name} deleted`);
+      showToast(`✅ Marque ${selectedBrand.name} supprimée`);
     } catch (err) {
-      showToast("❌ Failed to delete brand");
+      showToast("❌ Échec de la suppression de la marque");
     } finally {
       setDialogOpen(false);
       setSelectedBrand(null);
@@ -85,7 +85,7 @@ export default function BrandsPage() {
   const columns: MRT_ColumnDef<Brand>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nom",
       size: 200,
     },
     {
@@ -95,7 +95,7 @@ export default function BrandsPage() {
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: "Statut",
       size: 100,
       Cell: ({ cell }) => (
         <span
@@ -104,7 +104,7 @@ export default function BrandsPage() {
             : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
             }`}
         >
-          {cell.getValue<boolean>() ? "Active" : "Inactive"}
+          {cell.getValue<boolean>() ? "Actif" : "Inactif"}
         </span>
       ),
     },
@@ -117,14 +117,14 @@ export default function BrandsPage() {
           <button
             onClick={() => handleEdit(row.original)}
             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-            title="Edit"
+            title="Modifier"
           >
             <Pencil className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleDelete(row.original)}
             className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-            title="Delete"
+            title="Supprimer"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -138,17 +138,17 @@ export default function BrandsPage() {
       <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Brands
+            Marques
           </h1>
           <button
             onClick={handleAddBrand}
             className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
           >
-            Add New Brand
+            Ajouter une marque
           </button>
         </div>
 
-        {/* MaterialReactTable with dark mode support */}
+        {/* MaterialReactTable avec support du mode sombre */}
         <div className="dark:bg-gray-800 dark:text-white rounded-lg overflow-hidden">
           <MaterialReactTable
             columns={columns}
@@ -213,7 +213,7 @@ export default function BrandsPage() {
             open
             className="bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded-md shadow-lg"
           >
-            <Toast.Title>❌ Failed to fetch brands</Toast.Title>
+            <Toast.Title>❌ Échec de la récupération des marques</Toast.Title>
           </Toast.Root>
         )}
 
@@ -231,10 +231,10 @@ export default function BrandsPage() {
             <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
             <Dialog.Content className="fixed top-1/2 left-1/2 w-96 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
               <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                Confirm Delete
+                Confirmer la suppression
               </Dialog.Title>
               <Dialog.Description className="mt-2 text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete{" "}
+                Êtes-vous sûr de vouloir supprimer{" "}
                 <span className="font-semibold">
                   {selectedBrand?.name ?? ""}
                 </span>
@@ -246,13 +246,13 @@ export default function BrandsPage() {
                   onClick={() => setDialogOpen(false)}
                   className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={confirmDelete}
                   className="px-4 py-2 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
                 >
-                  Delete
+                  Supprimer
                 </button>
               </div>
             </Dialog.Content>

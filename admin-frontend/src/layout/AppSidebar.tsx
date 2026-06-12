@@ -28,32 +28,32 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    name: "POS",
+    name: "Point de vente",
     icon: <ShoppingCartIcon />,
     path: "/pos",
   },
   {
-    name: "Products",
+    name: "Produits",
     icon: <BoxCubeIcon />,
     path: "/products",
   },
   {
-    name: "Cars",
+    name: "Voitures",
     icon: <CarIcon />,
     path: "/cars",
   },
   {
-    name: "Drivers",
+    name: "Chauffeurs",
     icon: <UserCircleIcon />,
     path: "/drivers",
   },
   {
-    name: "Brands",
+    name: "Marques",
     icon: <PieChartIcon />,
     path: "/brands",
   },
   {
-    name: "Categories",
+    name: "Catégories",
     icon: <ListIcon />,
     path: "/categories",
   },
@@ -63,28 +63,29 @@ const navItems: NavItem[] = [
     path: "/clients",
   },
   {
-    name: "Suppliers",
+    name: "Fournisseurs",
     icon: <PlugInIcon />,
     path: "/suppliers",
   },
-  // Purchase Invoices with submenu
+  // Factures d'achat avec sous-menu
   {
-    name: "Purchase Invoices",
+    name: "Factures d'achat",
     icon: <BoxCubeIcon />,
     subItems: [
-      { name: "Purchase Invoices", path: "/purchase-invoice/list/PURCHASE_INVOICE" },
-      { name: "Purchase Orders", path: "/purchase-invoice/list/PURCHASE_ORDER" },
-      { name: "Purchase Refunds", path: "/purchase-invoice/list/PURCHASE_REFUND" },
+      { name: "Factures d'achat", path: "/purchase-invoice/list/PURCHASE_INVOICE" },
+      { name: "Commandes d'achat", path: "/purchase-invoice/list/PURCHASE_ORDER" },
+      { name: "Avoirs d'achat", path: "/purchase-invoice/list/PURCHASE_REFUND" },
+      { name: "Factures bon de sortie", path: "/purchase-invoice/list/SHIPPING_NOTE_INVOICE" },
     ],
   },
-  // Sale Invoices with submenu
+  // Factures de vente avec sous-menu
   {
-    name: "Sale Invoices",
+    name: "Factures de vente",
     icon: <TableIcon />,
     subItems: [
-      { name: "Sale Invoices", path: "/sale-invoice/list/SALE_INVOICE" },
-      { name: "Delivery Notes", path: "/sale-invoice/list/DELIVERY_NOTE" },
-      { name: "Quotation", path: "/sale-invoice/list/QUOTATION" },
+      { name: "Factures de vente", path: "/sale-invoice/list/SALE_INVOICE" },
+      { name: "Bons de livraison", path: "/sale-invoice/list/DELIVERY_NOTE" },
+      { name: "Devis", path: "/sale-invoice/list/QUOTATION" },
     ],
   },
 ];
@@ -92,30 +93,30 @@ const navItems: NavItem[] = [
 const othersItems: NavItem[] = [
   {
     icon: <PieChartIcon />,
-    name: "Charts",
+    name: "Graphiques",
     subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
+      { name: "Graphique linéaire", path: "/line-chart", pro: false },
+      { name: "Graphique à barres", path: "/bar-chart", pro: false },
     ],
   },
   {
     icon: <BoxCubeIcon />,
-    name: "UI Elements",
+    name: "Éléments d'interface",
     subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
+      { name: "Alertes", path: "/alerts", pro: false },
+      { name: "Avatars", path: "/avatars", pro: false },
+      { name: "Badges", path: "/badge", pro: false },
+      { name: "Boutons", path: "/buttons", pro: false },
       { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
+      { name: "Vidéos", path: "/videos", pro: false },
     ],
   },
   {
     icon: <PlugInIcon />,
-    name: "Authentication",
+    name: "Authentification",
     subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
+      { name: "Connexion", path: "/signin", pro: false },
+      { name: "Inscription", path: "/signup", pro: false },
     ],
   },
 ];
@@ -216,7 +217,7 @@ const AppSidebar: React.FC = () => {
                               : "menu-dropdown-badge-inactive"
                               } menu-dropdown-badge `}
                           >
-                            new
+                            nouveau
                           </span>
                         )}
                         {subItem.pro && (
@@ -254,7 +255,7 @@ const AppSidebar: React.FC = () => {
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
   useEffect(() => {
-    // Check if the current path matches any submenu item
+    // Vérifier si le chemin actuel correspond à un élément de sous-menu
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
       const items = menuType === "main" ? navItems : othersItems;
@@ -270,7 +271,7 @@ const AppSidebar: React.FC = () => {
             }
           });
         } else if (nav.path && isActive(nav.path)) {
-          // If a main nav item is active, close any open submenu
+          // Si un élément de navigation principal est actif, fermer tout sous-menu ouvert
           if (openSubmenu !== null) {
             setOpenSubmenu(null);
           }
@@ -278,14 +279,14 @@ const AppSidebar: React.FC = () => {
       });
     });
 
-    // If no submenu item matches, close the open submenu
+    // Si aucun élément de sous-menu ne correspond, fermer le sous-menu ouvert
     if (!submenuMatched && openSubmenu !== null) {
       setOpenSubmenu(null);
     }
   }, [pathname, isActive]);
 
   useEffect(() => {
-    // Set the height of the submenu items when the submenu is opened
+    // Définir la hauteur des éléments du sous-menu lorsque le sous-menu est ouvert
     if (openSubmenu !== null) {
       const key = `${openSubmenu.type}-${openSubmenu.index}`;
       if (subMenuRefs.current[key]) {
@@ -383,7 +384,7 @@ const AppSidebar: React.FC = () => {
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
+                  "Autres"
                 ) : (
                   <HorizontaLDots />
                 )}

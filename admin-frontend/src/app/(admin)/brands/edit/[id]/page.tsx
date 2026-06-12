@@ -18,11 +18,11 @@ interface Brand {
 
 const fetchBrand = async (id: string): Promise<Brand> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands/getBrandById/${id}`);
-  if (!response.ok) throw new Error("Failed to fetch brand");
+  if (!response.ok) throw new Error("Échec de la récupération de la marque");
   return response.json();
 };
 
-// Upload image if changed
+// Télécharger l'image si modifiée
 const uploadImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("image", file);
@@ -34,14 +34,14 @@ const uploadImage = async (file: File): Promise<string> => {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to upload image");
+    throw new Error(error.message || "Échec du téléchargement de l'image");
   }
 
   const data = await response.json();
   return data.url;
 };
 
-// Update brand with new data
+// Mettre à jour la marque avec les nouvelles données
 const updateBrand = async ({ id, data }: { id: string; data: Partial<Brand> }) => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}brands/${id}`, {
     method: "PUT",
@@ -53,7 +53,7 @@ const updateBrand = async ({ id, data }: { id: string; data: Partial<Brand> }) =
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to update brand");
+    throw new Error(error.message || "Échec de la mise à jour de la marque");
   }
 
   return response.json();
@@ -116,11 +116,11 @@ function EditBrandContent({ id }: { id: string }) {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
-        showToast("Only image files are allowed (jpg, jpeg, png, gif, webp)", "error");
+        showToast("Seuls les fichiers image sont autorisés (jpg, jpeg, png, gif, webp)", "error");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        showToast("Image size must not exceed 5MB", "error");
+        showToast("La taille de l'image ne doit pas dépasser 5 Mo", "error");
         return;
       }
       setImage(file);
@@ -141,11 +141,11 @@ function EditBrandContent({ id }: { id: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["brands"] });
       queryClient.invalidateQueries({ queryKey: ["brand", id] });
-      showToast("✅ Brand updated successfully", "success");
+      showToast("✅ Marque mise à jour avec succès", "success");
       setTimeout(() => router.push("/brands"), 1500);
     },
     onError: (error: Error) => {
-      showToast(`❌ ${error.message || "Connection problem"}`, "error");
+      showToast(`❌ ${error.message || "Problème de connexion"}`, "error");
     },
     onSettled: () => {
       setIsSubmitting(false);
@@ -157,7 +157,7 @@ function EditBrandContent({ id }: { id: string }) {
     event.preventDefault();
 
     if (!name) {
-      showToast("Name is required", "error");
+      showToast("Le nom est requis", "error");
       return;
     }
 
@@ -166,27 +166,27 @@ function EditBrandContent({ id }: { id: string }) {
     try {
       let imageUrl = existingImage || "";
 
-      // Upload new image if changed
+      // Télécharger la nouvelle image si modifiée
       if (image) {
         setIsUploading(true);
         imageUrl = await uploadImage(image);
       }
 
-      // Prepare update data
+      // Préparer les données de mise à jour
       const updateData: Partial<Brand> = {
         name,
         description: description || undefined,
       };
 
-      // Only include img if it changed
+      // Inclure l'image seulement si elle a changé
       if (imageUrl !== existingImage) {
         updateData.img = imageUrl;
       }
 
-      // Update brand
+      // Mettre à jour la marque
       updateMutation.mutate({ id, data: updateData });
     } catch (error) {
-      showToast(`❌ ${error instanceof Error ? error.message : "Failed to upload image"}`, "error");
+      showToast(`❌ ${error instanceof Error ? error.message : "Échec du téléchargement de l'image"}`, "error");
       setIsSubmitting(false);
       setIsUploading(false);
     }
@@ -207,31 +207,31 @@ function EditBrandContent({ id }: { id: string }) {
   return (
     <Toast.Provider>
       <div className="p-6">
-        <PageBreadcrumb pageTitle="Edit Brand" />
+        <PageBreadcrumb pageTitle="Modifier la marque" />
 
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handleCancel}
             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            ← Back to List
+            ← Retour à la liste
           </button>
         </div>
 
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
             <h3 className="text-xl font-semibold text-black dark:text-white">
-              Edit Brand
+              Modifier la marque
             </h3>
           </div>
 
           <form onSubmit={submitForm}>
             <div className="p-6.5">
               <div className="grid grid-cols-1 gap-6">
-                {/* Name */}
+                {/* Nom */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Name <span className="text-danger">*</span>
+                    Nom <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
@@ -255,10 +255,10 @@ function EditBrandContent({ id }: { id: string }) {
                   />
                 </div>
 
-                {/* Image Upload */}
+                {/* Téléchargement d'image */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Brand Image
+                    Image de la marque
                   </label>
                   <input
                     type="file"
@@ -267,15 +267,15 @@ function EditBrandContent({ id }: { id: string }) {
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Accepted formats: JPG, JPEG, PNG, GIF, WEBP (Max: 5MB). Leave empty to keep current image.
+                    Formats acceptés : JPG, JPEG, PNG, GIF, WEBP (Max : 5 Mo). Laissez vide pour conserver l'image actuelle.
                   </p>
 
                   {(imagePreview || existingImage) && (
                     <div className="mt-4 text-center">
-                      <p className="mb-2 text-sm font-medium text-black dark:text-white">Preview:</p>
+                      <p className="mb-2 text-sm font-medium text-black dark:text-white">Aperçu :</p>
                       <img
                         src={imagePreview || existingImage || ""}
-                        alt="Preview"
+                        alt="Aperçu"
                         className="mx-auto max-h-48 rounded-lg border object-contain"
                       />
                     </div>
@@ -283,14 +283,14 @@ function EditBrandContent({ id }: { id: string }) {
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Boutons */}
               <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={handleCancel}
                   className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
@@ -300,10 +300,10 @@ function EditBrandContent({ id }: { id: string }) {
                   {isSubmitting || isUploading ? (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent inline-block mr-2"></div>
-                      {isUploading ? "Uploading image..." : "Updating..."}
+                      {isUploading ? "Téléchargement de l'image..." : "Mise à jour en cours..."}
                     </>
                   ) : (
-                    "Update Brand"
+                    "Mettre à jour la marque"
                   )}
                 </button>
               </div>
@@ -311,7 +311,7 @@ function EditBrandContent({ id }: { id: string }) {
           </form>
         </div>
 
-        {/* Toast Notifications */}
+        {/* Notifications Toast */}
         <Toast.Root
           open={toastOpen}
           onOpenChange={setToastOpen}
