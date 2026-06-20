@@ -40,6 +40,33 @@ export class InventoryController {
   ) {}
 
   // ==================== STOCK MOVEMENTS CRUD ====================
+  // GET last stock movement for each product
+  @Get('movements/last-per-product')
+  async getLastMovementForEachProduct() {
+    return await this.stockMovementService.getLastMovementForEachProduct();
+  }
+
+  // Optional: GET with filters
+  @Get('movements/last-per-product/summary')
+  async getLastMovementSummary() {
+    const data =
+      await this.stockMovementService.getLastMovementForEachProduct();
+
+    return {
+      totalProducts: data.length,
+      productsWithMovements: data.filter((item) => item.hasMovements).length,
+      productsWithoutMovements: data.filter((item) => !item.hasMovements)
+        .length,
+      stockStatusSummary: {
+        outOfStock: data.filter((item) => item.stockStatus === 'OUT_OF_STOCK')
+          .length,
+        critical: data.filter((item) => item.stockStatus === 'CRITICAL').length,
+        low: data.filter((item) => item.stockStatus === 'LOW').length,
+        ok: data.filter((item) => item.stockStatus === 'OK').length,
+      },
+      data: data,
+    };
+  }
 
   // GET all movements with pagination and filters
   @Get('movements')

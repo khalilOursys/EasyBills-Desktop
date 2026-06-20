@@ -13,7 +13,11 @@ import { SearchProductsDto } from './dto/search-products.dto';
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createProductDto: CreateProductDto, imageUrl?: string) {
+  async create(
+    createProductDto: CreateProductDto,
+    imageUrl?: string,
+    userId?: number,
+  ) {
     // Check if product with same reference exists (if reference is provided)
     if (createProductDto.reference) {
       const existingByRef = await this.prisma.product.findFirst({
@@ -64,28 +68,59 @@ export class ProductsService {
       }
     }
 
-    return await this.prisma.product.create({
-      data: {
-        reference: createProductDto.reference,
-        internalCode: createProductDto.internalCode,
-        name: createProductDto.name,
-        description: createProductDto.description, // Added description
-        purchasePrice: createProductDto.purchasePrice,
-        marginPercent: createProductDto.marginPercent,
-        salePrice: createProductDto.salePrice,
-        priceIncludingTax: createProductDto.priceIncludingTax,
-        categoryId: createProductDto.categoryId,
-        brandId: createProductDto.brandId,
-        stock: createProductDto.stock || 0,
-        minStock: createProductDto.minStock || 0,
-        discount: createProductDto.discount || 0,
-        vat: createProductDto.vat || 19,
-        img: imageUrl,
-      },
-      include: {
-        category: true,
-        brand: true,
-      },
+    const initialStock = createProductDto.stock || 0;
+
+    // Create product and initial stock movement in a transaction
+    return await this.prisma.$transaction(async (prisma) => {
+      // Create the product
+      const product = await prisma.product.create({
+        data: {
+          reference: createProductDto.reference,
+          internalCode: createProductDto.internalCode,
+          name: createProductDto.name,
+          description: createProductDto.description,
+          purchasePrice: createProductDto.purchasePrice,
+          marginPercent: createProductDto.marginPercent,
+          salePrice: createProductDto.salePrice,
+          priceIncludingTax: createProductDto.priceIncludingTax,
+          categoryId: createProductDto.categoryId,
+          brandId: createProductDto.brandId,
+          stock: initialStock,
+          minStock: createProductDto.minStock || 0,
+          discount: createProductDto.discount || 0,
+          vat: createProductDto.vat || 19,
+          img: imageUrl,
+          lastStockUpdate: initialStock > 0 ? new Date() : null,
+        },
+        include: {
+          category: true,
+          brand: true,
+        },
+      });
+
+      // Create initial stock movement
+      /* const movementNumber = `INIT-${Date.now()}-${product.id}`;
+
+      await prisma.stockMovement.create({
+        data: {
+          movementNumber: movementNumber,
+          type: 'INITIAL',
+          quantity: initialStock,
+          previousStock: 0,
+          newStock: initialStock,
+          reason:
+            initialStock > 0
+              ? 'Initial inventory setup'
+              : 'Product created with zero stock',
+          status: 'COMPLETED',
+          productId: product.id,
+          createdAt: new Date(),
+          createdBy: userId || 1,
+          notes: `Initial stock: ${initialStock} units`,
+        },
+      }); */
+
+      return product;
     });
   }
 
@@ -93,9 +128,11 @@ export class ProductsService {
     id: number,
     updateProductDto: UpdateProductDto,
     imageUrl?: string,
+    userId?: number,
   ) {
-    // Check if product exists
-    await this.findOne(id);
+    // Check if product exists and get current stock
+    const existingProduct = await this.findOne(id);
+    const oldStock = existingProduct.stock;
 
     // Check if reference is being updated to an existing reference
     if (updateProductDto.reference) {
@@ -163,14 +200,69 @@ export class ProductsService {
       updateData.img = imageUrl;
     }
 
-    return await this.prisma.product.update({
-      where: { id },
-      data: updateData,
-      include: {
-        category: true,
-        brand: true,
-      },
-    });
+    // Check if stock is being updated
+    const newStock = updateProductDto.stock;
+    const stockChanged = newStock !== undefined && newStock !== oldStock;
+
+    // Update product with transaction if stock changed
+    if (stockChanged) {
+      return await this.prisma.$transaction(async (prisma) => {
+        // Update the product
+        const updatedProduct = await prisma.product.update({
+          where: { id },
+          data: {
+            ...updateData,
+            lastStockUpdate: new Date(),
+          },
+          include: {
+            category: true,
+            brand: true,
+          },
+        });
+
+        // Create stock adjustment movement
+        const quantityDifference = newStock - oldStock;
+        const movementNumber = `ADJ-${Date.now()}-${id}`;
+
+        const reason =
+          quantityDifference > 0
+            ? `Stock increased from ${oldStock} to ${newStock} (Added ${quantityDifference} units)`
+            : `Stock decreased from ${oldStock} to ${newStock} (Removed ${Math.abs(quantityDifference)} units)`;
+
+        await prisma.stockMovement.create({
+          data: {
+            movementNumber: movementNumber,
+            type: 'ADJUSTMENT',
+            quantity: Math.abs(quantityDifference),
+            previousStock: oldStock,
+            newStock: newStock,
+            reason: reason,
+            reference: `Manual adjustment via product update - Product ID: ${id}`,
+            status: 'COMPLETED',
+            productId: id,
+            createdAt: new Date(),
+            createdBy: userId || 1,
+            notes: `Stock manually adjusted during product update. Previous: ${oldStock}, New: ${newStock}, Difference: ${quantityDifference > 0 ? '+' : ''}${quantityDifference}`,
+          },
+        });
+
+        return updatedProduct;
+      });
+    } else {
+      // No stock change, just update normally
+      if (Object.keys(updateData).length > 0) {
+        return await this.prisma.product.update({
+          where: { id },
+          data: updateData,
+          include: {
+            category: true,
+            brand: true,
+          },
+        });
+      }
+
+      return existingProduct;
+    }
   }
 
   async findAll() {
@@ -261,8 +353,10 @@ export class ProductsService {
     id: number,
     quantity: number,
     operation: 'increment' | 'decrement',
+    userId?: number,
   ) {
     const product = await this.findOne(id);
+    const oldStock = product.stock;
 
     const newStock =
       operation === 'increment'
@@ -273,11 +367,99 @@ export class ProductsService {
       throw new BadRequestException('Insufficient stock.');
     }
 
-    return await this.prisma.product.update({
-      where: { id },
-      data: { stock: newStock },
+    return await this.prisma.$transaction(async (prisma) => {
+      const updatedProduct = await prisma.product.update({
+        where: { id },
+        data: {
+          stock: newStock,
+          lastStockUpdate: new Date(),
+        },
+      });
+
+      // Create stock movement
+      const movementNumber = `${operation === 'increment' ? 'INC' : 'DEC'}-${Date.now()}-${id}`;
+      const movementType = operation === 'increment' ? 'INBOUND' : 'OUTBOUND';
+
+      await prisma.stockMovement.create({
+        data: {
+          movementNumber: movementNumber,
+          type: movementType,
+          quantity: quantity,
+          previousStock: oldStock,
+          newStock: newStock,
+          reason: `${operation === 'increment' ? 'Stock increased' : 'Stock decreased'} by ${quantity} units`,
+          status: 'COMPLETED',
+          productId: id,
+          createdAt: new Date(),
+          createdBy: userId || 1,
+          notes: `Stock ${operation} operation. Quantity: ${quantity}`,
+        },
+      });
+
+      return updatedProduct;
     });
   }
+
+  async updateStockManually(
+    id: number,
+    newStock: number,
+    reason: string,
+    userId: number,
+  ) {
+    const product = await this.findOne(id);
+    const oldStock = product.stock;
+
+    if (newStock === oldStock) {
+      throw new BadRequestException(
+        'New stock value is the same as current stock.',
+      );
+    }
+
+    if (newStock < 0) {
+      throw new BadRequestException('Stock cannot be negative.');
+    }
+
+    const quantityDifference = newStock - oldStock;
+
+    return await this.prisma.$transaction(async (prisma) => {
+      // Update product stock
+      const updatedProduct = await prisma.product.update({
+        where: { id },
+        data: {
+          stock: newStock,
+          lastStockUpdate: new Date(),
+        },
+        include: {
+          category: true,
+          brand: true,
+        },
+      });
+
+      // Create stock movement
+      const movementNumber = `ADJ-${Date.now()}-${id}`;
+
+      await prisma.stockMovement.create({
+        data: {
+          movementNumber: movementNumber,
+          type: 'ADJUSTMENT',
+          quantity: Math.abs(quantityDifference),
+          previousStock: oldStock,
+          newStock: newStock,
+          reason:
+            reason || `Manual stock adjustment from ${oldStock} to ${newStock}`,
+          reference: `Manual adjustment - ${reason || 'Stock correction'}`,
+          status: 'COMPLETED',
+          productId: id,
+          createdAt: new Date(),
+          createdBy: userId,
+          notes: `Stock changed from ${oldStock} to ${newStock}. Difference: ${quantityDifference > 0 ? '+' : ''}${quantityDifference}`,
+        },
+      });
+
+      return updatedProduct;
+    });
+  }
+
   async searchProducts(searchParams: SearchProductsDto) {
     const {
       search,

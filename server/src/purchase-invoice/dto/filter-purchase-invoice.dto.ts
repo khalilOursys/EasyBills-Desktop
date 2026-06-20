@@ -1,5 +1,11 @@
 // src/purchase-invoice/dto/filter-purchase-invoice.dto.ts
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { InvoiceStatus, PurchaseInvoiceType } from '@prisma/client';
 
 export class FilterPurchaseInvoiceDto {
@@ -22,6 +28,10 @@ export class FilterPurchaseInvoiceDto {
   @IsString()
   @IsOptional()
   supplierName?: string;
+
+  @IsInt()
+  @IsOptional()
+  supplierId?: number;
 
   @IsString()
   @IsOptional()

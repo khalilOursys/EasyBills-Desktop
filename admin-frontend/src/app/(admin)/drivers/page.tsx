@@ -29,7 +29,7 @@ type Driver = {
 
 const fetchDrivers = async (): Promise<Driver[]> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}driver`);
-  if (!res.ok) throw new Error("Failed to fetch drivers");
+  if (!res.ok) throw new Error("Erreur lors du chargement des chauffeurs");
   return res.json();
 };
 
@@ -37,7 +37,7 @@ const toggleDriverActive = async (id: number): Promise<Driver> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}driver/${id}/toggle-active`, {
     method: "PATCH",
   });
-  if (!res.ok) throw new Error("Failed to toggle driver status");
+  if (!res.ok) throw new Error("Erreur lors du changement de statut du chauffeur");
   return res.json();
 };
 
@@ -51,7 +51,7 @@ export default function DriversPage() {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // Detect theme changes
+  // Détection des changements de thème
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setTheme(isDark ? "dark" : "light");
@@ -96,9 +96,9 @@ export default function DriversPage() {
     try {
       await toggleDriverActive(driver.id);
       await refetch();
-      showToast(`✅ Driver ${driver.firstName} ${driver.lastName} ${driver.active ? "deactivated" : "activated"} successfully`);
+      showToast(`✅ Chauffeur ${driver.firstName} ${driver.lastName} ${driver.active ? "désactivé" : "activé"} avec succès`);
     } catch (err) {
-      showToast("❌ Failed to toggle driver status");
+      showToast("❌ Erreur lors du changement de statut du chauffeur");
     }
   };
 
@@ -115,12 +115,12 @@ export default function DriversPage() {
         `${process.env.NEXT_PUBLIC_API_URL}driver/${selectedDriver.id}`,
         { method: "DELETE" }
       );
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) throw new Error("Échec de la suppression");
 
       await refetch();
-      showToast(`✅ Driver ${selectedDriver.firstName} ${selectedDriver.lastName} deleted successfully`);
+      showToast(`✅ Chauffeur ${selectedDriver.firstName} ${selectedDriver.lastName} supprimé avec succès`);
     } catch (err) {
-      showToast("❌ Failed to delete driver");
+      showToast("❌ Échec de la suppression du chauffeur");
     } finally {
       setDialogOpen(false);
       setSelectedDriver(null);
@@ -130,13 +130,13 @@ export default function DriversPage() {
   const columns: MRT_ColumnDef<Driver>[] = [
     {
       accessorKey: "firstName",
-      header: "Full Name",
+      header: "Nom complet",
       size: 180,
       Cell: ({ row }) => `${row.original.firstName} ${row.original.lastName}`,
     },
     {
       accessorKey: "phone",
-      header: "Phone",
+      header: "Téléphone",
       size: 120,
       Cell: ({ cell }) => cell.getValue<string>() || "-",
     },
@@ -148,13 +148,13 @@ export default function DriversPage() {
     },
     {
       accessorKey: "licenseNumber",
-      header: "License No.",
+      header: "N° Permis",
       size: 140,
       Cell: ({ cell }) => cell.getValue<string>() || "-",
     },
     {
       accessorKey: "active",
-      header: "Status",
+      header: "Statut",
       size: 100,
       Cell: ({ cell }) => {
         const isActive = cell.getValue<boolean>();
@@ -165,14 +165,14 @@ export default function DriversPage() {
               : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
               }`}
           >
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? "Actif" : "Inactif"}
           </span>
         );
       },
     },
     {
       accessorKey: "car",
-      header: "Assigned Vehicle",
+      header: "Véhicule assigné",
       size: 200,
       Cell: ({ cell }) => {
         const car = cell.getValue<Driver["car"]>();
@@ -193,21 +193,21 @@ export default function DriversPage() {
               ? "text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30"
               : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
               }`}
-            title={row.original.active ? "Deactivate" : "Activate"}
+            title={row.original.active ? "Désactiver" : "Activer"}
           >
             {row.original.active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
           </button>
           <button
             onClick={() => handleEdit(row.original)}
             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-            title="Edit"
+            title="Modifier"
           >
             <Pencil className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleDelete(row.original)}
             className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
-            title="Delete"
+            title="Supprimer"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -221,17 +221,17 @@ export default function DriversPage() {
       <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Drivers
+            Chauffeurs
           </h1>
           <button
             onClick={handleAddDriver}
             className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
           >
-            Add New Driver
+            Ajouter un chauffeur
           </button>
         </div>
 
-        {/* MaterialReactTable with dark mode support */}
+        {/* MaterialReactTable avec support du mode sombre */}
         <div className="dark:bg-gray-800 dark:text-white rounded-lg overflow-hidden">
           <MaterialReactTable
             columns={columns}
@@ -296,7 +296,7 @@ export default function DriversPage() {
             open
             className="bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded-md shadow-lg"
           >
-            <Toast.Title>❌ Failed to fetch drivers</Toast.Title>
+            <Toast.Title>❌ Échec du chargement des chauffeurs</Toast.Title>
           </Toast.Root>
         )}
 
@@ -314,10 +314,10 @@ export default function DriversPage() {
             <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
             <Dialog.Content className="fixed top-1/2 left-1/2 w-96 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
               <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                Confirm Delete
+                Confirmer la suppression
               </Dialog.Title>
               <Dialog.Description className="mt-2 text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete driver{" "}
+                Êtes-vous sûr de vouloir supprimer le chauffeur{" "}
                 <span className="font-semibold">
                   {selectedDriver?.firstName} {selectedDriver?.lastName}
                 </span>
@@ -329,13 +329,13 @@ export default function DriversPage() {
                   onClick={() => setDialogOpen(false)}
                   className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={confirmDelete}
                   className="px-4 py-2 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
                 >
-                  Delete
+                  Supprimer
                 </button>
               </div>
             </Dialog.Content>

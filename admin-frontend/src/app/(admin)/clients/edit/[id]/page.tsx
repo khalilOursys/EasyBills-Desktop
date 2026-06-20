@@ -18,7 +18,7 @@ interface Client {
 
 const fetchClient = async (id: string): Promise<Client> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}clients/${id}`);
-  if (!response.ok) throw new Error("Failed to fetch client");
+  if (!response.ok) throw new Error("Erreur lors du chargement du client");
   return response.json();
 };
 
@@ -33,7 +33,7 @@ const updateClient = async ({ id, data }: { id: string; data: Partial<Client> })
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to update client");
+    throw new Error(error.message || "Erreur lors de la mise à jour du client");
   }
 
   return response.json();
@@ -85,11 +85,11 @@ export default function EditClientPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["client", id] });
-      showToast("✅ Client updated successfully", "success");
+      showToast("✅ Client modifié avec succès", "success");
       setTimeout(() => router.push("/clients"), 1500);
     },
     onError: (error: Error) => {
-      showToast(`❌ ${error.message || "Connection problem"}`, "error");
+      showToast(`❌ ${error.message || "Problème de connexion"}`, "error");
     },
     onSettled: () => {
       setIsSubmitting(false);
@@ -100,7 +100,7 @@ export default function EditClientPage() {
     event.preventDefault();
 
     if (!name) {
-      showToast("Name is required", "error");
+      showToast("Le nom est requis", "error");
       return;
     }
 
@@ -133,31 +133,31 @@ export default function EditClientPage() {
   return (
     <Toast.Provider>
       <div className="p-6">
-        <PageBreadcrumb pageTitle="Edit Client" />
+        <PageBreadcrumb pageTitle="Modifier le client" />
 
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handleCancel}
             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            ← Back to List
+            ← Retour à la liste
           </button>
         </div>
 
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
             <h3 className="text-xl font-semibold text-black dark:text-white">
-              Edit Client
+              Modifier le client
             </h3>
           </div>
 
           <form onSubmit={submitForm}>
             <div className="p-6.5">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Name */}
+                {/* Nom */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Name <span className="text-danger">*</span>
+                    Nom <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
@@ -168,10 +168,10 @@ export default function EditClientPage() {
                   />
                 </div>
 
-                {/* Phone */}
+                {/* Téléphone */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Phone
+                    Téléphone
                   </label>
                   <input
                     type="tel"
@@ -182,10 +182,10 @@ export default function EditClientPage() {
                   />
                 </div>
 
-                {/* Tax Number */}
+                {/* Numéro fiscal */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Tax Number
+                    Numéro fiscal
                   </label>
                   <input
                     type="text"
@@ -205,34 +205,34 @@ export default function EditClientPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="client@example.com"
+                    placeholder="client@exemple.com"
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                 </div>
               </div>
 
-              {/* Address - Full width */}
+              {/* Adresse - Pleine largeur */}
               <div className="mt-6">
                 <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                  Address
+                  Adresse
                 </label>
                 <textarea
                   rows={3}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Full address"
+                  placeholder="Adresse complète"
                   className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                 />
               </div>
 
-              {/* Buttons */}
+              {/* Boutons */}
               <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={handleCancel}
                   className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
@@ -242,10 +242,10 @@ export default function EditClientPage() {
                   {isSubmitting ? (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent inline-block mr-2"></div>
-                      Updating...
+                      Mise à jour...
                     </>
                   ) : (
-                    "Update Client"
+                    "Mettre à jour le client"
                   )}
                 </button>
               </div>
@@ -253,7 +253,7 @@ export default function EditClientPage() {
           </form>
         </div>
 
-        {/* Toast Notifications */}
+        {/* Notifications Toast */}
         <Toast.Root
           open={toastOpen}
           onOpenChange={setToastOpen}

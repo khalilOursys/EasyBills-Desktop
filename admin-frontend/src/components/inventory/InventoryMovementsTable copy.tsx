@@ -10,17 +10,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 import { Pencil, Trash2, Eye, RefreshCw, Package, TrendingUp, TrendingDown, AlertTriangle, Plus } from "lucide-react";
 import { format } from "date-fns";
 import Select from "react-select";
-const movementTypeLabels: Record<string, string> = {
-    "INBOUND": "Entrée",
-    "OUTBOUND": "Sortie",
-    "ADJUSTMENT": "Ajustement",
-    "RETURN": "Retour",
-    "LOSS": "Perte",
-    "TRANSFER": "Transfert",
-    "INITIAL": "Initial",
-    "PURCHASE": "Achat",
-    "SALE": "Vente"
-};
+
 type StockMovement = {
     id: number;
     movementNumber: string;
@@ -117,14 +107,14 @@ const fetchMovements = async (params?: {
 
     const url = `${process.env.NEXT_PUBLIC_API_URL}inventory/movements${queryParams.toString() ? `?${queryParams}` : ""}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Échec du chargement des mouvements");
+    if (!res.ok) throw new Error("Failed to fetch movements");
     return res.json();
 };
 
 const fetchLastMovementPerProduct = async (): Promise<MovementSummary> => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}inventory/movements/last-per-product/summary`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Échec du chargement des derniers mouvements par produit");
+    if (!res.ok) throw new Error("Failed to fetch last movements per product");
     return res.json();
 };
 
@@ -134,14 +124,14 @@ const updateMovementStatus = async (id: number, status: string) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
     });
-    if (!res.ok) throw new Error("Échec de la mise à jour du mouvement");
+    if (!res.ok) throw new Error("Failed to update movement");
     return res.json();
 };
 
 const cancelMovement = async (id: number, reason?: string) => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}inventory/movements/${id}${reason ? `?reason=${encodeURIComponent(reason)}` : ""}`;
     const res = await fetch(url, { method: "DELETE" });
-    if (!res.ok) throw new Error("Échec de l'annulation du mouvement");
+    if (!res.ok) throw new Error("Failed to cancel movement");
     return res.json();
 };
 
@@ -151,11 +141,11 @@ const createMovement = async (data: any) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Échec de la création du mouvement");
+    if (!res.ok) throw new Error("Failed to create movement");
     return res.json();
 };
 
-// Vérification de type pour savoir si le mouvement est de type StockMovement
+// Type guard to check if movement is StockMovement
 function isStockMovement(movement: StockMovement | LastMovementPerProduct): movement is StockMovement {
     return 'movementNumber' in movement;
 }
@@ -182,7 +172,7 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
         setToastOpen(true);
     };
 
-    // Détection automatique du type de mouvement basé sur la différence de quantité
+    // Auto-detect movement type based on quantity difference
     const getMovementType = () => {
         const difference = newQuantity - product.currentStock;
         if (difference > 0) return "INBOUND";
@@ -204,9 +194,14 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
         const difference = getDifference();
 
         if (difference === 0) {
-            showToast("Aucun changement de quantité");
+            showToast("No change in quantity");
             return;
         }
+
+        /* if (!reason) {
+            showToast("Please provide a reason");
+            return;
+        } */
 
         setIsSubmitting(true);
 
@@ -226,13 +221,13 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                 body: JSON.stringify(movementData),
             });
 
-            if (!res.ok) throw new Error("Échec de la création du mouvement");
+            if (!res.ok) throw new Error("Failed to create movement");
 
             queryClient.invalidateQueries({ queryKey: ["last-movement-per-product"] });
             queryClient.invalidateQueries({ queryKey: ["inventory-movements"] });
-            showToast(`✅ Stock mis à jour de ${product.currentStock} à ${newQuantity}`);
+            showToast(`✅ Stock updated from ${product.currentStock} to ${newQuantity}`);
 
-            // Réinitialisation du formulaire
+            // Reset form
             setNewQuantity(product.currentStock);
             setReason("");
             setNotes("");
@@ -241,7 +236,7 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
             onSuccess?.();
             onOpenChange(false);
         } catch (err) {
-            showToast("❌ Échec de la mise à jour du stock");
+            showToast("❌ Failed to update stock");
         } finally {
             setIsSubmitting(false);
         }
@@ -258,19 +253,19 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                     <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
                     <Dialog.Content className="fixed top-1/2 left-1/2 w-[550px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
                         <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                            Mettre à jour le stock - {product.name}
+                            Update Stock - {product.name}
                         </Dialog.Title>
                         <Dialog.Description className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Référence : {product.reference} | Stock actuel : {product.currentStock}
+                            Reference: {product.reference} | Current Stock: {product.currentStock}
                         </Dialog.Description>
 
                         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-                            {/* Informations sur le stock actuel */}
+                            {/* Current Stock Info */}
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                            Stock actuel
+                                            Current Stock
                                         </label>
                                         <p className={`text-xl font-bold ${product.currentStock <= product.criticalStock
                                             ? "text-red-600 dark:text-red-400"
@@ -283,7 +278,7 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                            Stock min / Critique
+                                            Min / Critical Stock
                                         </label>
                                         <p className="text-gray-900 dark:text-white">
                                             {product.minStock} / {product.criticalStock}
@@ -292,10 +287,10 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                                 </div>
                             </div>
 
-                            {/* Champ Nouvelle Quantité */}
+                            {/* New Quantity Input */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Nouvelle quantité *
+                                    New Quantity *
                                 </label>
                                 <input
                                     type="number"
@@ -308,12 +303,12 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                                 {difference !== 0 && (
                                     <div className={`mt-2 p-2 rounded-md ${difference > 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
                                         <p className={`text-sm font-medium ${difference > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                                            {difference > 0 ? '📦 ENTRÉE' : '🚚 SORTIE'} -
-                                            {difference > 0 ? ' Ajout de ' : ' Retrait de '}
-                                            <span className="font-bold">{quantity}</span> unité(s)
+                                            {difference > 0 ? '📦 INBOUND' : '🚚 OUTBOUND'} -
+                                            {difference > 0 ? ' Adding ' : ' Removing '}
+                                            <span className="font-bold">{quantity}</span> unit(s)
                                         </p>
                                         <p className="text-xs mt-1 text-gray-600 dark:text-gray-400">
-                                            Le stock passera de <span className="font-semibold">{product.currentStock}</span> à{' '}
+                                            Stock will change from <span className="font-semibold">{product.currentStock}</span> to{' '}
                                             <span className={`font-semibold ${newQuantity <= product.criticalStock ? 'text-red-600' : ''}`}>
                                                 {newQuantity}
                                             </span>
@@ -322,17 +317,17 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                                 )}
                             </div>
 
-                            {/* Raison */}
+                            {/* Reason */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Raison
+                                    Reason
                                 </label>
                                 <input
                                     type="text"
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Pourquoi le stock est-il mis à jour ?"
+                                    placeholder="Why is the stock being updated?"
                                 />
                             </div>
 
@@ -343,7 +338,7 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                                     onClick={() => onOpenChange(false)}
                                     className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                                 >
-                                    Annuler
+                                    Cancel
                                 </button>
                                 <button
                                     type="submit"
@@ -351,11 +346,11 @@ function EditMovementModal({ open, onOpenChange, product, onSuccess }: EditMovem
                                     className="px-4 py-2 rounded-md bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {isSubmitting ? (
-                                        "Traitement..."
+                                        "Processing..."
                                     ) : (
                                         <>
                                             <Plus className="w-4 h-4" />
-                                            Mettre à jour le stock
+                                            Update Stock
                                         </>
                                     )}
                                 </button>
@@ -397,7 +392,7 @@ export default function InventoryMovementsTable() {
         setToastOpen(true);
     };
 
-    // Requête pour tous les mouvements (paginated)
+    // Query for all movements (paginated)
     const {
         data: movementsData,
         isLoading: movementsLoading,
@@ -412,7 +407,7 @@ export default function InventoryMovementsTable() {
         enabled: activeTab === "all-movements",
     });
 
-    // Requête pour le dernier mouvement par produit
+    // Query for last movement per product
     const {
         data: lastMovementData,
         isLoading: lastMovementLoading,
@@ -443,13 +438,13 @@ export default function InventoryMovementsTable() {
         if (!selectedMovement || !isStockMovement(selectedMovement)) return;
 
         try {
-            await cancelMovement(selectedMovement.id, "Annulé par l'utilisateur");
+            await cancelMovement(selectedMovement.id, "Cancelled by user");
             await refetchMovements();
             queryClient.invalidateQueries({ queryKey: ["inventory-movements"] });
             queryClient.invalidateQueries({ queryKey: ["last-movement-per-product"] });
-            showToast(`✅ Mouvement ${selectedMovement.movementNumber} annulé`);
+            showToast(`✅ Movement ${selectedMovement.movementNumber} cancelled`);
         } catch (err) {
-            showToast("❌ Échec de l'annulation du mouvement");
+            showToast("❌ Failed to cancel movement");
         } finally {
             setDialogOpen(false);
             setSelectedMovement(null);
@@ -466,11 +461,11 @@ export default function InventoryMovementsTable() {
         return colors[status as keyof typeof colors] || colors.OK;
     };
 
-    // Colonnes pour l'onglet Tous les mouvements
+    // Columns for All Movements tab
     const movementColumns: MRT_ColumnDef<StockMovement>[] = [
         {
             accessorKey: "movementNumber",
-            header: "Mouvement #",
+            header: "Movement #",
             size: 150,
         },
         {
@@ -490,22 +485,21 @@ export default function InventoryMovementsTable() {
                     TRANSFER: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300",
                     INITIAL: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300",
                 };
-
                 return (
                     <span className={`px-2 py-1 rounded-full text-xs ${colors[type] || "bg-gray-100"}`}>
-                        {movementTypeLabels[type] || type}
+                        {type}
                     </span>
                 );
             },
         },
         {
             accessorKey: "product.name",
-            header: "Produit",
+            header: "Product",
             size: 200,
         },
         {
             accessorKey: "quantity",
-            header: "Quantité",
+            header: "Quantity",
             size: 100,
             Cell: ({ cell, row }) => {
                 const quantity = cell.getValue() as number;
@@ -520,17 +514,17 @@ export default function InventoryMovementsTable() {
         },
         {
             accessorKey: "previousStock",
-            header: "Ancien stock",
+            header: "Old Stock",
             size: 100,
         },
         {
             accessorKey: "newStock",
-            header: "Nouveau stock",
+            header: "New Stock",
             size: 100,
         },
         {
             accessorKey: "status",
-            header: "Statut",
+            header: "Status",
             size: 120,
             Cell: ({ cell }) => {
                 const status = cell.getValue() as string;
@@ -548,7 +542,7 @@ export default function InventoryMovementsTable() {
         },
         {
             accessorKey: "reason",
-            header: "Raison",
+            header: "Reason",
             size: 250,
         },
         {
@@ -566,7 +560,7 @@ export default function InventoryMovementsTable() {
                     <button
                         onClick={() => handleView(row.original)}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-                        title="Voir les détails"
+                        title="View Details"
                     >
                         <Eye className="w-5 h-5" />
                     </button>
@@ -574,7 +568,7 @@ export default function InventoryMovementsTable() {
                         <button
                             onClick={() => handleCancel(row.original)}
                             className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
-                            title="Annuler le mouvement"
+                            title="Cancel Movement"
                         >
                             <Trash2 className="w-5 h-5" />
                         </button>
@@ -584,11 +578,11 @@ export default function InventoryMovementsTable() {
         },
     ];
 
-    // Colonnes pour l'onglet Dernier mouvement par produit
+    // Columns for Last Movement Per Product tab
     const lastMovementColumns: MRT_ColumnDef<LastMovementPerProduct>[] = [
         {
             accessorKey: "product.name",
-            header: "Produit",
+            header: "Product",
             size: 200,
             Cell: ({ row }) => (
                 <div>
@@ -596,14 +590,14 @@ export default function InventoryMovementsTable() {
                         {row.original.product.name}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Réf : {row.original.product.reference}
+                        Ref: {row.original.product.reference}
                     </div>
                 </div>
             ),
         },
         {
             accessorKey: "previousStock",
-            header: "Ancien stock",
+            header: "Old Stock",
             size: 100,
             Cell: ({ row }) => (
                 <div>
@@ -615,7 +609,7 @@ export default function InventoryMovementsTable() {
         },
         {
             accessorKey: "product.currentStock",
-            header: "Stock actuel",
+            header: "Current Stock",
             size: 120,
             Cell: ({ row }) => (
                 <div className="flex items-center gap-2">
@@ -635,23 +629,21 @@ export default function InventoryMovementsTable() {
         },
         {
             accessorKey: "stockStatus",
-            header: "État du stock",
+            header: "Stock Status",
             size: 120,
             Cell: ({ row }) => (
                 <span className={`px-2 py-1 rounded-full text-xs ${getStockStatusColor(row.original.stockStatus)}`}>
-                    {row.original.stockStatus === "OUT_OF_STOCK" ? "RUPTURE" :
-                        row.original.stockStatus === "CRITICAL" ? "CRITIQUE" :
-                            row.original.stockStatus === "LOW" ? "BAS" : "OK"}
+                    {row.original.stockStatus.replace("_", " ")}
                 </span>
             ),
         },
         {
             accessorKey: "lastMovement",
-            header: "Dernier mouvement",
+            header: "Last Movement",
             size: 180,
             Cell: ({ row }) => {
                 const movement = row.original.lastMovement;
-                if (!movement) return <span className="text-gray-400">Aucun mouvement</span>;
+                if (!movement) return <span className="text-gray-400">No movements</span>;
                 return (
                     <div>
                         <div className="flex items-center gap-1">
@@ -673,12 +665,11 @@ export default function InventoryMovementsTable() {
         },
         {
             accessorKey: "lastMovement.type",
-            header: "Type de mouvement",
+            header: "Movement Type",
             size: 120,
             Cell: ({ row }) => {
                 const movement = row.original.lastMovement;
                 if (!movement) return <span className="text-gray-400">-</span>;
-                console.log(movementTypeLabels, movement.type);
                 return (
                     <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700">
                         {movement.type}
@@ -688,7 +679,7 @@ export default function InventoryMovementsTable() {
         },
         {
             accessorKey: "product.minStock",
-            header: "Stock min",
+            header: "Min Stock",
             size: 80,
             Cell: ({ row }) => (
                 <span className="text-gray-600 dark:text-gray-400">
@@ -698,7 +689,7 @@ export default function InventoryMovementsTable() {
         },
         {
             accessorKey: "product.criticalStock",
-            header: "Critique",
+            header: "Critical",
             size: 80,
             Cell: ({ row }) => (
                 <span className="text-gray-600 dark:text-gray-400">
@@ -715,14 +706,14 @@ export default function InventoryMovementsTable() {
                     <button
                         onClick={() => handleView(row.original)}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-                        title="Voir les détails"
+                        title="View Details"
                     >
                         <Eye className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => handleEdit(row.original.product)}
                         className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors"
-                        title="Mettre à jour le stock"
+                        title="Update Stock"
                     >
                         <Pencil className="w-5 h-5" />
                     </button>
@@ -736,7 +727,7 @@ export default function InventoryMovementsTable() {
             <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Gestion des stocks
+                        Stock Management
                     </h1>
                     <button
                         onClick={() => {
@@ -749,21 +740,21 @@ export default function InventoryMovementsTable() {
                         className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors flex items-center gap-2"
                     >
                         <RefreshCw className="w-4 h-4" />
-                        Rafraîchir
+                        Refresh
                     </button>
                 </div>
 
-                {/* Onglets */}
+                {/* Tabs */}
                 <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="mb-6">
                     <Tabs.List className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
                         <Tabs.Trigger
                             value="last-per-product"
                             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
                         >
-                            Dernier mouvement par produit
+                            Last Movement Per Product
                             {lastMovementData && (
                                 <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700">
-                                    {lastMovementData.totalProducts} produits
+                                    {lastMovementData.totalProducts} products
                                 </span>
                             )}
                         </Tabs.Trigger>
@@ -771,11 +762,11 @@ export default function InventoryMovementsTable() {
                             value="all-movements"
                             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
                         >
-                            Tous les mouvements
+                            All Movements
                         </Tabs.Trigger>
                     </Tabs.List>
 
-                    {/* Contenu de l'onglet Tous les mouvements */}
+                    {/* All Movements Tab Content */}
                     <Tabs.Content value="all-movements" className="mt-4">
                         <div className="dark:bg-gray-800 dark:text-white rounded-lg overflow-hidden">
                             <MaterialReactTable
@@ -841,15 +832,15 @@ export default function InventoryMovementsTable() {
                         </div>
                     </Tabs.Content>
 
-                    {/* Contenu de l'onglet Dernier mouvement par produit */}
+                    {/* Last Movement Per Product Tab Content */}
                     <Tabs.Content value="last-per-product" className="mt-4">
-                        {/* Cartes récapitulatives */}
+                        {/* Summary Cards */}
                         {lastMovementData && (
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Total produits</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Products</p>
                                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                                 {lastMovementData.totalProducts}
                                             </p>
@@ -860,7 +851,7 @@ export default function InventoryMovementsTable() {
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Avec mouvements</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">With Movements</p>
                                             <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                                                 {lastMovementData.productsWithMovements}
                                             </p>
@@ -871,7 +862,7 @@ export default function InventoryMovementsTable() {
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Stock bas/critique</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Low/Critical Stock</p>
                                             <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                                                 {lastMovementData.stockStatusSummary.low + lastMovementData.stockStatusSummary.critical}
                                             </p>
@@ -882,7 +873,7 @@ export default function InventoryMovementsTable() {
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">En rupture</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
                                             <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                                                 {lastMovementData.stockStatusSummary.outOfStock}
                                             </p>
@@ -959,7 +950,7 @@ export default function InventoryMovementsTable() {
                         open
                         className="bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded-md shadow-lg"
                     >
-                        <Toast.Title>❌ Échec du chargement des données</Toast.Title>
+                        <Toast.Title>❌ Failed to fetch data</Toast.Title>
                     </Toast.Root>
                 )}
 
@@ -972,7 +963,7 @@ export default function InventoryMovementsTable() {
                 </Toast.Root>
                 <Toast.Viewport className="fixed top-4 right-4 w-96 max-w-full outline-none z-50" />
 
-                {/* Modal de modification du mouvement */}
+                {/* Edit Movement Modal */}
                 {selectedProduct && (
                     <EditMovementModal
                         open={editModalOpen}
@@ -985,24 +976,24 @@ export default function InventoryMovementsTable() {
                     />
                 )}
 
-                {/* Dialogue de visualisation des détails */}
+                {/* View Details Dialog */}
                 <Dialog.Root open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
                     <Dialog.Portal>
                         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
                         <Dialog.Content className="fixed top-1/2 left-1/2 w-[600px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
                             <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                                Détails du mouvement
+                                Movement Details
                             </Dialog.Title>
 
                             {selectedMovement && (
                                 <div className="mt-4 space-y-4">
                                     {isStockMovement(selectedMovement) ? (
-                                        // Détails StockMovement
+                                        // StockMovement details
                                         <>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                        Mouvement #
+                                                        Movement #
                                                     </label>
                                                     <p className="font-mono text-gray-900 dark:text-white">
                                                         {selectedMovement.movementNumber}
@@ -1010,7 +1001,7 @@ export default function InventoryMovementsTable() {
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                        Statut
+                                                        Status
                                                     </label>
                                                     <div>
                                                         <span className={`inline-block px-2 py-1 rounded-full text-xs ${selectedMovement.status === "COMPLETED"
@@ -1019,21 +1010,19 @@ export default function InventoryMovementsTable() {
                                                                 ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                                                                 : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
                                                             }`}>
-                                                            {selectedMovement.status === "COMPLETED" ? "TERMINÉ" :
-                                                                selectedMovement.status === "PENDING" ? "EN ATTENTE" :
-                                                                    "ANNULÉ"}
+                                                            {selectedMovement.status}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                        Produit
+                                                        Product
                                                     </label>
                                                     <p className="text-gray-900 dark:text-white">
                                                         {selectedMovement.product?.name}
                                                     </p>
                                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                        Réf : {selectedMovement.product?.reference}
+                                                        Ref: {selectedMovement.product?.reference}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -1046,9 +1035,9 @@ export default function InventoryMovementsTable() {
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                        Quantité
+                                                        Quantity
                                                     </label>
-                                                    <p className={`font-semibold ${selectedMovement.type === "OUTBOUND" || selectedMovement.type === "SALE" || selectedMovement.type === "LOSS"
+                                                    <p className={`font-semibold ${selectedMovement.type === "OUTBOUND"
                                                         ? "text-red-600 dark:text-red-400"
                                                         : "text-green-600 dark:text-green-400"
                                                         }`}>
@@ -1057,7 +1046,7 @@ export default function InventoryMovementsTable() {
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                        Variation de stock
+                                                        Stock Change
                                                     </label>
                                                     <p className="text-gray-900 dark:text-white">
                                                         {selectedMovement.previousStock} → {selectedMovement.newStock}
@@ -1072,7 +1061,7 @@ export default function InventoryMovementsTable() {
                                                 </div>
                                                 <div className="col-span-2">
                                                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                        Raison
+                                                        Reason
                                                     </label>
                                                     <p className="text-gray-900 dark:text-white">
                                                         {selectedMovement.reason}
@@ -1090,7 +1079,7 @@ export default function InventoryMovementsTable() {
                                                 )}
                                                 <div className="col-span-2">
                                                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                        Créé le
+                                                        Created At
                                                     </label>
                                                     <p className="text-gray-900 dark:text-white">
                                                         {format(new Date(selectedMovement.createdAt), "dd/MM/yyyy HH:mm:ss")}
@@ -1099,27 +1088,27 @@ export default function InventoryMovementsTable() {
                                             </div>
                                         </>
                                     ) : (
-                                        // Détails LastMovementPerProduct
+                                        // LastMovementPerProduct details
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="col-span-2">
                                                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                    Produit
+                                                    Product
                                                 </label>
                                                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                                     {selectedMovement.product.name}
                                                 </p>
                                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                    Référence : {selectedMovement.product.reference}
+                                                    Reference: {selectedMovement.product.reference}
                                                 </p>
                                                 {selectedMovement.product.internalCode && (
                                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                        Code interne : {selectedMovement.product.internalCode}
+                                                        Internal Code: {selectedMovement.product.internalCode}
                                                     </p>
                                                 )}
                                             </div>
                                             <div>
                                                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                    Stock actuel
+                                                    Current Stock
                                                 </label>
                                                 <p className={`text-xl font-bold ${selectedMovement.product.currentStock <= selectedMovement.product.criticalStock
                                                     ? "text-red-600 dark:text-red-400"
@@ -1132,13 +1121,11 @@ export default function InventoryMovementsTable() {
                                             </div>
                                             <div>
                                                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                    État du stock
+                                                    Stock Status
                                                 </label>
                                                 <div>
                                                     <span className={`inline-block px-2 py-1 rounded-full text-xs ${getStockStatusColor(selectedMovement.stockStatus)}`}>
-                                                        {selectedMovement.stockStatus === "OUT_OF_STOCK" ? "RUPTURE" :
-                                                            selectedMovement.stockStatus === "CRITICAL" ? "CRITIQUE" :
-                                                                selectedMovement.stockStatus === "LOW" ? "BAS" : "OK"}
+                                                        {selectedMovement.stockStatus.replace("_", " ")}
                                                     </span>
                                                 </div>
                                             </div>
@@ -1146,7 +1133,7 @@ export default function InventoryMovementsTable() {
                                                 <>
                                                     <div>
                                                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                            Dernier mouvement #
+                                                            Last Movement #
                                                         </label>
                                                         <p className="font-mono text-sm text-gray-900 dark:text-white">
                                                             {selectedMovement.lastMovement.movementNumber}
@@ -1154,7 +1141,7 @@ export default function InventoryMovementsTable() {
                                                     </div>
                                                     <div>
                                                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                            Date du dernier mouvement
+                                                            Last Movement Date
                                                         </label>
                                                         <p className="text-gray-900 dark:text-white">
                                                             {format(new Date(selectedMovement.lastMovement.createdAt), "dd/MM/yyyy HH:mm:ss")}
@@ -1162,7 +1149,7 @@ export default function InventoryMovementsTable() {
                                                     </div>
                                                     <div>
                                                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                            Dernière quantité
+                                                            Last Quantity
                                                         </label>
                                                         <p className={selectedMovement.lastMovement.quantity > 0 ? "text-green-600" : "text-red-600"}>
                                                             {selectedMovement.lastMovement.quantity > 0 ? `+${selectedMovement.lastMovement.quantity}` : selectedMovement.lastMovement.quantity}
@@ -1170,7 +1157,7 @@ export default function InventoryMovementsTable() {
                                                     </div>
                                                     <div>
                                                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                            Variation de stock
+                                                            Stock Change
                                                         </label>
                                                         <p className="text-gray-900 dark:text-white">
                                                             {selectedMovement.lastMovement.previousStock} → {selectedMovement.lastMovement.newStock}
@@ -1178,7 +1165,7 @@ export default function InventoryMovementsTable() {
                                                     </div>
                                                     <div className="col-span-2">
                                                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                            Raison
+                                                            Reason
                                                         </label>
                                                         <p className="text-gray-900 dark:text-white">
                                                             {selectedMovement.lastMovement.reason}
@@ -1189,7 +1176,7 @@ export default function InventoryMovementsTable() {
                                             {!selectedMovement.hasMovements && (
                                                 <div className="col-span-2">
                                                     <p className="text-yellow-600 dark:text-yellow-400">
-                                                        Ce produit n'a pas encore de mouvements de stock
+                                                        This product has no stock movements yet
                                                     </p>
                                                 </div>
                                             )}
@@ -1203,23 +1190,23 @@ export default function InventoryMovementsTable() {
                                     onClick={() => setViewDialogOpen(false)}
                                     className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                                 >
-                                    Fermer
+                                    Close
                                 </button>
                             </div>
                         </Dialog.Content>
                     </Dialog.Portal>
                 </Dialog.Root>
 
-                {/* Dialogue de confirmation d'annulation */}
+                {/* Cancel Confirmation Dialog */}
                 <Dialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
                     <Dialog.Portal>
                         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
                         <Dialog.Content className="fixed top-1/2 left-1/2 w-96 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
                             <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                                Confirmer l'annulation
+                                Confirm Cancel
                             </Dialog.Title>
                             <Dialog.Description className="mt-2 text-gray-600 dark:text-gray-300">
-                                Êtes-vous sûr de vouloir annuler le mouvement{" "}
+                                Are you sure you want to cancel movement{" "}
                                 <span className="font-semibold">
                                     {selectedMovement && isStockMovement(selectedMovement)
                                         ? selectedMovement.movementNumber
@@ -1233,13 +1220,13 @@ export default function InventoryMovementsTable() {
                                     onClick={() => setDialogOpen(false)}
                                     className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                                 >
-                                    Annuler
+                                    Cancel
                                 </button>
                                 <button
                                     onClick={confirmCancel}
                                     className="px-4 py-2 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
                                 >
-                                    Oui, annuler le mouvement
+                                    Yes, Cancel Movement
                                 </button>
                             </div>
                         </Dialog.Content>

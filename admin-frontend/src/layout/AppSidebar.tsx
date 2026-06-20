@@ -17,65 +17,63 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
-import { ChevronDownIcon, ShoppingCartIcon, CarIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ShoppingCartIcon,
+  CarIcon,
+  WarehouseIcon,
+  FileTextIcon,
+  PackageIcon,
+  TruckIcon,
+  UsersIcon,
+  BuildingIcon,
+  TagIcon,
+  ReceiptIcon,
+  FileCheckIcon,
+  TrendingUpIcon,
+  PackageSearchIcon,
+  SettingsIcon
+} from "lucide-react";
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: {
+    name: string;
+    path: string;
+    pro?: boolean;
+    new?: boolean;
+    icon?: React.ReactNode;
+  }[];
 };
 
 const navItems: NavItem[] = [
-  {
-    name: "Point de vente",
-    icon: <ShoppingCartIcon />,
-    path: "/pos",
-  },
-  {
-    name: "Produits",
-    icon: <BoxCubeIcon />,
-    path: "/products",
-  },
-  {
-    name: "Voitures",
-    icon: <CarIcon />,
-    path: "/cars",
-  },
-  {
-    name: "Chauffeurs",
-    icon: <UserCircleIcon />,
-    path: "/drivers",
-  },
-  {
-    name: "Marques",
-    icon: <PieChartIcon />,
-    path: "/brands",
-  },
-  {
-    name: "Catégories",
-    icon: <ListIcon />,
-    path: "/categories",
-  },
-  {
-    name: "Clients",
-    icon: <TableIcon />,
-    path: "/clients",
-  },
-  {
-    name: "Fournisseurs",
-    icon: <PlugInIcon />,
-    path: "/suppliers",
-  },
   // Factures d'achat avec sous-menu
   {
     name: "Factures d'achat",
-    icon: <BoxCubeIcon />,
+    icon: <ReceiptIcon size={20} />,
     subItems: [
-      { name: "Factures d'achat", path: "/purchase-invoice/list/PURCHASE_INVOICE" },
-      { name: "Commandes d'achat", path: "/purchase-invoice/list/PURCHASE_ORDER" },
-      { name: "Avoirs d'achat", path: "/purchase-invoice/list/PURCHASE_REFUND" },
-      { name: "Factures bon de sortie", path: "/purchase-invoice/list/SHIPPING_NOTE_INVOICE" },
+      {
+        name: "Factures d'achat",
+        path: "/purchase-invoice/list/PURCHASE_INVOICE",
+        icon: <FileCheckIcon size={16} />
+      },
+      {
+        name: "Commandes d'achat",
+        path: "/purchase-invoice/list/PURCHASE_ORDER",
+        icon: <PackageIcon size={16} />
+      },
+      {
+        name: "Avoirs d'achat",
+        path: "/purchase-invoice/list/PURCHASE_REFUND",
+        icon: <ReceiptIcon size={16} />
+      },
+      {
+        name: "Factures bon de sortie",
+        path: "/purchase-invoice/list/SHIPPING_NOTE_INVOICE",
+        icon: <TruckIcon size={16} />
+      },
     ],
   },
   // Factures de vente avec sous-menu
@@ -83,9 +81,84 @@ const navItems: NavItem[] = [
     name: "Factures de vente",
     icon: <TableIcon />,
     subItems: [
-      { name: "Factures de vente", path: "/sale-invoice/list/SALE_INVOICE" },
-      { name: "Bons de livraison", path: "/sale-invoice/list/DELIVERY_NOTE" },
-      { name: "Devis", path: "/sale-invoice/list/QUOTATION" },
+      {
+        name: "Factures de vente",
+        path: "/sale-invoice/list/SALE_INVOICE",
+        icon: <FileCheckIcon size={16} />
+      },
+      {
+        name: "Bons de livraison",
+        path: "/sale-invoice/list/DELIVERY_NOTE",
+        icon: <TruckIcon size={16} />
+      },
+      {
+        name: "Devis",
+        path: "/sale-invoice/list/QUOTATION",
+        icon: <FileTextIcon size={16} />
+      },
+    ],
+  },
+  {
+    name: "Vente comptoir",
+    icon: <TrendingUpIcon />,
+    subItems: [
+      {
+        name: "Point de vente",
+        icon: <ShoppingCartIcon size={20} />,
+        path: "/pos",
+      },
+    ],
+  },
+  {
+    name: "Produits & Stocks",
+    icon: <PackageSearchIcon />,
+    subItems: [
+      {
+        name: "Produits",
+        icon: <BoxCubeIcon />,
+        path: "/products",
+      },
+      {
+        name: "Marques",
+        icon: <PieChartIcon />,
+        path: "/brands",
+      },
+      {
+        name: "Catégories",
+        icon: <ListIcon />,
+        path: "/categories",
+      },
+      {
+        name: "Inventaire",
+        icon: <WarehouseIcon size={20} />,
+        path: "/inventory",
+      },
+    ],
+  },
+  {
+    name: "Settings",
+    icon: <SettingsIcon />,
+    subItems: [
+      {
+        name: "Voitures",
+        icon: <CarIcon size={20} />,
+        path: "/cars",
+      },
+      {
+        name: "Chauffeurs",
+        icon: <UserCircleIcon />,
+        path: "/drivers",
+      },
+      {
+        name: "Clients",
+        icon: <UsersIcon size={20} />,
+        path: "/clients",
+      },
+      {
+        name: "Fournisseurs",
+        icon: <BuildingIcon size={20} />,
+        path: "/suppliers",
+      },
     ],
   },
 ];
@@ -95,28 +168,28 @@ const othersItems: NavItem[] = [
     icon: <PieChartIcon />,
     name: "Graphiques",
     subItems: [
-      { name: "Graphique linéaire", path: "/line-chart", pro: false },
-      { name: "Graphique à barres", path: "/bar-chart", pro: false },
+      { name: "Graphique linéaire", path: "/line-chart", pro: false, icon: <PieChartIcon /> },
+      { name: "Graphique à barres", path: "/bar-chart", pro: false, icon: <PieChartIcon /> },
     ],
   },
   {
     icon: <BoxCubeIcon />,
     name: "Éléments d'interface",
     subItems: [
-      { name: "Alertes", path: "/alerts", pro: false },
-      { name: "Avatars", path: "/avatars", pro: false },
-      { name: "Badges", path: "/badge", pro: false },
-      { name: "Boutons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Vidéos", path: "/videos", pro: false },
+      { name: "Alertes", path: "/alerts", pro: false, icon: <ListIcon /> },
+      { name: "Avatars", path: "/avatars", pro: false, icon: <UserCircleIcon /> },
+      { name: "Badges", path: "/badge", pro: false, icon: <TagIcon size={16} /> },
+      { name: "Boutons", path: "/buttons", pro: false, icon: <BoxCubeIcon /> },
+      { name: "Images", path: "/images", pro: false, icon: <GridIcon /> },
+      { name: "Vidéos", path: "/videos", pro: false, icon: <GridIcon /> },
     ],
   },
   {
     icon: <PlugInIcon />,
     name: "Authentification",
     subItems: [
-      { name: "Connexion", path: "/signin", pro: false },
-      { name: "Inscription", path: "/signup", pro: false },
+      { name: "Connexion", path: "/signin", pro: false, icon: <UserCircleIcon /> },
+      { name: "Inscription", path: "/signup", pro: false, icon: <UserCircleIcon /> },
     ],
   },
 ];
@@ -124,6 +197,17 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+
+  const [openSubmenu, setOpenSubmenu] = useState<{
+    type: "main" | "others";
+    index: number;
+  } | null>(null);
+  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
+    {}
+  );
+  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -203,19 +287,25 @@ const AppSidebar: React.FC = () => {
                   <li key={subItem.name}>
                     <Link
                       href={subItem.path}
-                      className={`menu-dropdown-item ${isActive(subItem.path)
+                      className={`menu-dropdown-item flex items-center ${isActive(subItem.path)
                         ? "menu-dropdown-item-active"
                         : "menu-dropdown-item-inactive"
                         }`}
                     >
-                      {subItem.name}
+                      {/* Subitem Icon */}
+                      {subItem.icon && (
+                        <span className="mr-2.5 text-gray-500 dark:text-gray-400 flex-shrink-0">
+                          {subItem.icon}
+                        </span>
+                      )}
+                      <span className="flex-1">{subItem.name}</span>
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
                           <span
                             className={`ml-auto ${isActive(subItem.path)
                               ? "menu-dropdown-badge-active"
                               : "menu-dropdown-badge-inactive"
-                              } menu-dropdown-badge `}
+                              } menu-dropdown-badge`}
                           >
                             nouveau
                           </span>
@@ -225,7 +315,7 @@ const AppSidebar: React.FC = () => {
                             className={`ml-auto ${isActive(subItem.path)
                               ? "menu-dropdown-badge-active"
                               : "menu-dropdown-badge-inactive"
-                              } menu-dropdown-badge `}
+                              } menu-dropdown-badge`}
                           >
                             pro
                           </span>
@@ -242,20 +332,7 @@ const AppSidebar: React.FC = () => {
     </ul>
   );
 
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
-    index: number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
-  );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // const isActive = (path: string) => path === pathname;
-  const isActive = useCallback((path: string) => path === pathname, [pathname]);
-
   useEffect(() => {
-    // Vérifier si le chemin actuel correspond à un élément de sous-menu
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
       const items = menuType === "main" ? navItems : othersItems;
@@ -271,7 +348,6 @@ const AppSidebar: React.FC = () => {
             }
           });
         } else if (nav.path && isActive(nav.path)) {
-          // Si un élément de navigation principal est actif, fermer tout sous-menu ouvert
           if (openSubmenu !== null) {
             setOpenSubmenu(null);
           }
@@ -279,14 +355,12 @@ const AppSidebar: React.FC = () => {
       });
     });
 
-    // Si aucun élément de sous-menu ne correspond, fermer le sous-menu ouvert
     if (!submenuMatched && openSubmenu !== null) {
       setOpenSubmenu(null);
     }
   }, [pathname, isActive]);
 
   useEffect(() => {
-    // Définir la hauteur des éléments du sous-menu lorsque le sous-menu est ouvert
     if (openSubmenu !== null) {
       const key = `${openSubmenu.type}-${openSubmenu.index}`;
       if (subMenuRefs.current[key]) {
@@ -376,12 +450,14 @@ const AppSidebar: React.FC = () => {
               {renderMenuItems(navItems, "main")}
             </div>
 
+            {/* Uncomment if you want to show Others section */}
             {/* <div className="">
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                  !isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Autres"

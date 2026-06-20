@@ -135,12 +135,30 @@ export class PurchaseInvoiceService {
         };
       }
 
-      if (filterDto.supplierName) {
+      if (filterDto.supplierName && filterDto.supplierId) {
+        where.supplier = {
+          AND: [
+            {
+              name: {
+                contains: filterDto.supplierName,
+                mode: 'insensitive',
+              },
+            },
+            {
+              id: filterDto.supplierId,
+            },
+          ],
+        };
+      } else if (filterDto.supplierName) {
         where.supplier = {
           name: {
             contains: filterDto.supplierName,
             mode: 'insensitive',
           },
+        };
+      } else if (filterDto.supplierId) {
+        where.supplier = {
+          id: filterDto.supplierId,
         };
       }
     }

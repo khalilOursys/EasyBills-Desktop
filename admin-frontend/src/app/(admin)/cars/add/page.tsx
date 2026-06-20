@@ -24,7 +24,7 @@ const createCar = async (carData: Car): Promise<Car> => {
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to create car");
+    throw new Error(error.message || "Erreur lors de la création du véhicule");
   }
   return response.json();
 };
@@ -33,7 +33,7 @@ export default function AddCarPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  // Form states
+  // États du formulaire
   const [registration, setRegistration] = useState("");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
@@ -52,11 +52,11 @@ export default function AddCarPage() {
     mutationFn: createCar,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cars"] });
-      showToast("✅ Vehicle added successfully", "success");
+      showToast("✅ Véhicule ajouté avec succès", "success");
       setTimeout(() => router.push("/cars"), 1500);
     },
     onError: (error: Error) => {
-      showToast(`❌ ${error.message || "Connection problem"}`, "error");
+      showToast(`❌ ${error.message || "Problème de connexion"}`, "error");
     },
   });
 
@@ -65,13 +65,13 @@ export default function AddCarPage() {
 
     let isValid = true;
 
-    // Validate required fields
+    // Validation des champs obligatoires
     if (validator.isEmpty(registration)) {
-      showToast("❌ Registration is required", "error");
+      showToast("❌ L'immatriculation est requise", "error");
       isValid = false;
     }
 
-    // Validate registration format (Tunisian plates)
+    // Validation du format d'immatriculation (plaques tunisiennes)
     if (
       registration &&
       !validator.matches(
@@ -79,16 +79,16 @@ export default function AddCarPage() {
         /^[0-9]{1,3}[-\s]?[A-Za-z]{1,3}[-\s]?[0-9]{1,4}$/
       )
     ) {
-      showToast("❌ Invalid registration format", "error");
+      showToast("❌ Format d'immatriculation invalide", "error");
       isValid = false;
     }
 
-    // Validate year if provided
+    // Validation de l'année si fournie
     if (year) {
       const yearNum = parseInt(year);
       const currentYear = new Date().getFullYear();
       if (yearNum < 1900 || yearNum > currentYear + 1) {
-        showToast(`❌ Year must be between 1900 and ${currentYear + 1}`, "error");
+        showToast(`❌ L'année doit être comprise entre 1900 et ${currentYear + 1}`, "error");
         isValid = false;
       }
     }
@@ -109,31 +109,31 @@ export default function AddCarPage() {
   return (
     <Toast.Provider>
       <div className="p-6">
-        <PageBreadcrumb pageTitle="Add New Vehicle" />
+        <PageBreadcrumb pageTitle="Ajouter un nouveau véhicule" />
 
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handleCancel}
             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            ← Back to List
+            ← Retour à la liste
           </button>
         </div>
 
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
             <h3 className="text-xl font-semibold text-black dark:text-white">
-              Add New Vehicle
+              Ajouter un nouveau véhicule
             </h3>
           </div>
 
           <form onSubmit={submitForm}>
             <div className="p-6.5">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Registration */}
+                {/* Immatriculation */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Registration <span className="text-danger">*</span>
+                    Immatriculation <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
@@ -143,14 +143,14 @@ export default function AddCarPage() {
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Format: 123 Tunis 456 or 123TU456
+                    Format : 123 Tunis 456 ou 123TU456
                   </p>
                 </div>
 
-                {/* Brand */}
+                {/* Marque */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Brand
+                    Marque
                   </label>
                   <input
                     type="text"
@@ -161,10 +161,10 @@ export default function AddCarPage() {
                   />
                 </div>
 
-                {/* Model */}
+                {/* Modèle */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Model
+                    Modèle
                   </label>
                   <input
                     type="text"
@@ -175,10 +175,10 @@ export default function AddCarPage() {
                   />
                 </div>
 
-                {/* Year */}
+                {/* Année */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Year
+                    Année
                   </label>
                   <input
                     type="number"
@@ -192,27 +192,27 @@ export default function AddCarPage() {
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Boutons */}
               <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={handleCancel}
                   className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="rounded-md bg-primary px-6 py-3 font-medium text-white hover:bg-opacity-90 transition-colors"
+                  className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
                   {createMutation.isPending ? (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent inline-block mr-2"></div>
-                      Saving...
+                      Enregistrement...
                     </>
                   ) : (
-                    "Save Vehicle"
+                    "Enregistrer le véhicule"
                   )}
                 </button>
               </div>
@@ -220,7 +220,7 @@ export default function AddCarPage() {
           </form>
         </div>
 
-        {/* Toast Notifications */}
+        {/* Notifications Toast */}
         <Toast.Root
           open={toastOpen}
           onOpenChange={setToastOpen}

@@ -20,7 +20,7 @@ type Car = {
 
 const fetchCars = async (): Promise<Car[]> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}cars`);
-  if (!res.ok) throw new Error("Failed to fetch cars");
+  if (!res.ok) throw new Error("Erreur lors du chargement des véhicules");
   return res.json();
 };
 
@@ -34,7 +34,7 @@ export default function CarsPage() {
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // Detect theme changes
+  // Détection des changements de thème
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setTheme(isDark ? "dark" : "light");
@@ -88,12 +88,12 @@ export default function CarsPage() {
         `${process.env.NEXT_PUBLIC_API_URL}cars/${selectedCar.id}`,
         { method: "DELETE" }
       );
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) throw new Error("Échec de la suppression");
 
       await refetch();
-      showToast(`✅ Car ${selectedCar.registration} deleted successfully`);
+      showToast(`✅ Véhicule ${selectedCar.registration} supprimé avec succès`);
     } catch (err) {
-      showToast("❌ Failed to delete car");
+      showToast("❌ Échec de la suppression du véhicule");
     } finally {
       setDialogOpen(false);
       setSelectedCar(null);
@@ -103,7 +103,7 @@ export default function CarsPage() {
   const columns: MRT_ColumnDef<Car>[] = [
     {
       accessorKey: "registration",
-      header: "Registration",
+      header: "Immatriculation",
       size: 150,
       Cell: ({ cell }) => (
         <span className="font-mono font-medium">
@@ -113,19 +113,19 @@ export default function CarsPage() {
     },
     {
       accessorKey: "brand",
-      header: "Brand",
+      header: "Marque",
       size: 120,
       Cell: ({ cell }) => cell.getValue<string>() || "-",
     },
     {
       accessorKey: "model",
-      header: "Model",
+      header: "Modèle",
       size: 120,
       Cell: ({ cell }) => cell.getValue<string>() || "-",
     },
     {
       accessorKey: "year",
-      header: "Year",
+      header: "Année",
       size: 100,
       Cell: ({ cell }) => {
         const year = cell.getValue<number>();
@@ -141,14 +141,14 @@ export default function CarsPage() {
           <button
             onClick={() => handleEdit(row.original)}
             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-            title="Edit"
+            title="Modifier"
           >
             <Pencil className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleDelete(row.original)}
             className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
-            title="Delete"
+            title="Supprimer"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -162,17 +162,17 @@ export default function CarsPage() {
       <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Vehicles
+            Véhicules
           </h1>
           <button
             onClick={handleAddCar}
             className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
           >
-            Add New Vehicle
+            Ajouter un véhicule
           </button>
         </div>
 
-        {/* MaterialReactTable with dark mode support */}
+        {/* MaterialReactTable avec support du mode sombre */}
         <div className="dark:bg-gray-800 dark:text-white rounded-lg overflow-hidden">
           <MaterialReactTable
             columns={columns}
@@ -237,7 +237,7 @@ export default function CarsPage() {
             open
             className="bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded-md shadow-lg"
           >
-            <Toast.Title>❌ Failed to fetch vehicles</Toast.Title>
+            <Toast.Title>❌ Échec du chargement des véhicules</Toast.Title>
           </Toast.Root>
         )}
 
@@ -255,10 +255,10 @@ export default function CarsPage() {
             <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
             <Dialog.Content className="fixed top-1/2 left-1/2 w-96 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
               <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                Confirm Delete
+                Confirmer la suppression
               </Dialog.Title>
               <Dialog.Description className="mt-2 text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete vehicle{" "}
+                Êtes-vous sûr de vouloir supprimer le véhicule{" "}
                 <span className="font-semibold font-mono">
                   {selectedCar?.registration ?? ""}
                 </span>
@@ -270,13 +270,13 @@ export default function CarsPage() {
                   onClick={() => setDialogOpen(false)}
                   className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={confirmDelete}
                   className="px-4 py-2 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
                 >
-                  Delete
+                  Supprimer
                 </button>
               </div>
             </Dialog.Content>

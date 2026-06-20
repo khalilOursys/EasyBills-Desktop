@@ -144,9 +144,6 @@ export default function CategoriesPage() {
             enableBottomToolbar={true}
             enableTopToolbar={true}
             muiTableBodyRowProps={{ hover: false }}
-            initialState={{
-              sorting: [{ id: "createdAt", desc: true }],
-            }}
             state={{
               isLoading,
             }}

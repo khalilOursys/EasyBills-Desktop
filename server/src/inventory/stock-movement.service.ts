@@ -329,27 +329,55 @@ export class StockMovementService {
     const previousStock = product.stock;
     let newStock = previousStock;
 
+    let reason = dto.reason;
+
     if (!skipStockUpdate) {
       if (
         dto.type === StockMovementType.INBOUND ||
         dto.type === StockMovementType.INITIAL
       ) {
         newStock = previousStock + dto.quantity;
+
+        if (!reason) {
+          reason =
+            dto.type === StockMovementType.INITIAL
+              ? 'Initial stock setup'
+              : 'Stock received';
+        }
       } else if (
         dto.type === StockMovementType.OUTBOUND ||
         dto.type === StockMovementType.LOSS
       ) {
         newStock = previousStock - dto.quantity;
+
         if (newStock < 0) {
           throw new BadRequestException('Insufficient stock');
         }
+
+        if (!reason) {
+          reason =
+            dto.type === StockMovementType.OUTBOUND
+              ? 'Stock issued'
+              : 'Lost, damaged or expired stock';
+        }
       } else if (dto.type === StockMovementType.ADJUSTMENT) {
-        newStock = dto.quantity; // For adjustment, quantity is the new stock value
+        newStock = dto.quantity;
+
+        if (!reason) {
+          reason = `Stock adjusted from ${previousStock} to ${dto.quantity}`;
+        }
       } else if (dto.type === StockMovementType.RETURN) {
         newStock = previousStock + dto.quantity;
+
+        if (!reason) {
+          reason = 'Returned to inventory';
+        }
       } else if (dto.type === StockMovementType.TRANSFER) {
-        // Transfer handled separately
         newStock = previousStock;
+
+        if (!reason) {
+          reason = 'Stock transferred';
+        }
       }
     }
 
@@ -364,7 +392,7 @@ export class StockMovementService {
             : dto.quantity,
         previousStock,
         newStock: skipStockUpdate ? previousStock : newStock,
-        reason: dto.reason,
+        reason: reason,
         reference: dto.reference,
         status: dto.status || StockMovementStatus.COMPLETED,
         productId,
@@ -462,5 +490,102 @@ export class StockMovementService {
       averageDailyOutbound: outbound / days,
       estimatedDaysRemaining: outbound > 0 ? inbound / (outbound / days) : null,
     };
+  }
+
+  async getLastMovementForEachProduct() {
+    // Get all active products with their latest stock movement
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        stockMovements: {
+          orderBy: { createdAt: 'desc' },
+          take: 1, // Get only the most recent movement for each product
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+              },
+            },
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        brand: {
+          select: {
+            id: true,
+            name: true,
+            img: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    // Transform the result to have a cleaner structure
+    return products.map((product) => ({
+      product: {
+        id: product.id,
+        name: product.name,
+        reference: product.reference,
+        internalCode: product.internalCode,
+        description: product.description,
+        currentStock: product.stock,
+        minStock: product.minStock,
+        criticalStock: product.criticalStock,
+        reservedStock: product.reservedStock,
+        purchasePrice: product.purchasePrice,
+        salePrice: product.salePrice,
+        priceIncludingTax: product.priceIncludingTax,
+        category: product.category,
+        brand: product.brand,
+        isActive: product.isActive,
+      },
+      lastMovement: product.stockMovements[0]
+        ? {
+            id: product.stockMovements[0].id,
+            movementNumber: product.stockMovements[0].movementNumber,
+            type: product.stockMovements[0].type,
+            quantity: product.stockMovements[0].quantity,
+            previousStock: product.stockMovements[0].previousStock,
+            newStock: product.stockMovements[0].newStock,
+            reason: product.stockMovements[0].reason,
+            reference: product.stockMovements[0].reference,
+            status: product.stockMovements[0].status,
+            notes: product.stockMovements[0].notes,
+            createdAt: product.stockMovements[0].createdAt,
+            user: product.stockMovements[0].user,
+          }
+        : null,
+      hasMovements: product.stockMovements.length > 0,
+      stockStatus: this.getStockStatus(
+        product.stock,
+        /* product.criticalStock, */
+        5,
+        product.minStock,
+      ),
+    }));
+  }
+
+  private getStockStatus(
+    currentStock: number,
+    criticalStock: number,
+    minStock: number,
+  ): string {
+    if (currentStock <= 0) return 'OUT_OF_STOCK';
+    if (currentStock <= criticalStock) return 'CRITICAL';
+    if (currentStock <= minStock) return 'LOW';
+    return 'OK';
   }
 }

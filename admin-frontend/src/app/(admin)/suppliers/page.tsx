@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Toast from "@radix-ui/react-toast";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
+import { HandCoins, Pencil, Trash2, Truck } from "lucide-react";
 
 type Supplier = {
   id: number;
@@ -25,7 +25,7 @@ type Supplier = {
 
 const fetchSuppliers = async (): Promise<Supplier[]> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}suppliers`);
-  if (!res.ok) throw new Error("Failed to fetch suppliers");
+  if (!res.ok) throw new Error("Erreur lors du chargement des fournisseurs");
   return res.json();
 };
 
@@ -38,6 +38,24 @@ export default function SuppliersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  // Détection des changements de thème
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "dark" : "light");
+
+    const observer = new MutationObserver(() => {
+      const isDarkNow = document.documentElement.classList.contains("dark");
+      setTheme(isDarkNow ? "dark" : "light");
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -58,6 +76,10 @@ export default function SuppliersPage() {
     router.push("/suppliers/add");
   };
 
+  const handlePayment = (supplier: Supplier) => {
+    router.push(`/payments?type=purchase&entityId=${supplier.id}`);
+  };
+
   const handleEdit = (supplier: Supplier) => {
     router.push(`/suppliers/edit/${supplier.id}`);
   };
@@ -75,12 +97,12 @@ export default function SuppliersPage() {
         `${process.env.NEXT_PUBLIC_API_URL}suppliers/${selectedSupplier.id}`,
         { method: "DELETE" },
       );
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) throw new Error("Échec de la suppression");
 
       await refetch();
-      showToast(`✅ Supplier ${selectedSupplier.name} deleted`);
+      showToast(`✅ Fournisseur ${selectedSupplier.name} supprimé avec succès`);
     } catch (err) {
-      showToast("❌ Failed to delete supplier");
+      showToast("❌ Échec de la suppression du fournisseur");
     } finally {
       setDialogOpen(false);
       setSelectedSupplier(null);
@@ -95,23 +117,39 @@ export default function SuppliersPage() {
     },
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nom",
       size: 200,
     },
     {
       accessorKey: "taxNumber",
-      header: "Tax Number",
+      header: "Numéro fiscal",
       size: 120,
     },
     {
       accessorKey: "phone",
-      header: "Phone",
+      header: "Téléphone",
       size: 130,
     },
     {
       accessorKey: "email",
       header: "Email",
       size: 200,
+    },
+    {
+      accessorKey: "paiment",
+      header: "Paiements",
+      size: 200,
+      Cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePayment(row.original)}
+            className="p-1.5 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+            title="Paiements"
+          >
+            <HandCoins className="w-5 h-5" />
+          </button>
+        </div>
+      ),
     },
     {
       id: "actions",
@@ -121,15 +159,15 @@ export default function SuppliersPage() {
         <div className="flex gap-2">
           <button
             onClick={() => handleEdit(row.original)}
-            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-            title="Edit"
+            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+            title="Modifier"
           >
             <Pencil className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleDelete(row.original)}
-            className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-            title="Delete"
+            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
+            title="Supprimer"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -143,17 +181,17 @@ export default function SuppliersPage() {
       <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Suppliers
+            Fournisseurs
           </h1>
           <button
             onClick={handleAddSupplier}
             className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
           >
-            Add New Supplier
+            Ajouter un fournisseur
           </button>
         </div>
 
-        {/* MaterialReactTable with dark mode support */}
+        {/* MaterialReactTable avec support du mode sombre */}
         <div className="dark:bg-gray-800 dark:text-white rounded-lg overflow-hidden">
           <MaterialReactTable
             columns={columns}
@@ -218,7 +256,7 @@ export default function SuppliersPage() {
             open
             className="bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded-md shadow-lg"
           >
-            <Toast.Title>❌ Failed to fetch suppliers</Toast.Title>
+            <Toast.Title>❌ Échec du chargement des fournisseurs</Toast.Title>
           </Toast.Root>
         )}
 
@@ -236,10 +274,10 @@ export default function SuppliersPage() {
             <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
             <Dialog.Content className="fixed top-1/2 left-1/2 w-96 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg z-50 transition-colors duration-200">
               <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-                Confirm Delete
+                Confirmer la suppression
               </Dialog.Title>
               <Dialog.Description className="mt-2 text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete{" "}
+                Êtes-vous sûr de vouloir supprimer
                 <span className="font-semibold">
                   {selectedSupplier?.name ?? ""}
                 </span>
@@ -251,13 +289,13 @@ export default function SuppliersPage() {
                   onClick={() => setDialogOpen(false)}
                   className="px-4 py-2 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={confirmDelete}
                   className="px-4 py-2 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
                 >
-                  Delete
+                  Supprimer
                 </button>
               </div>
             </Dialog.Content>

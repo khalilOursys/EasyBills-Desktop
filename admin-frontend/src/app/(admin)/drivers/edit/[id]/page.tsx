@@ -30,13 +30,13 @@ interface Driver {
 
 const fetchCars = async (): Promise<Car[]> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}cars`);
-  if (!response.ok) throw new Error("Failed to fetch cars");
+  if (!response.ok) throw new Error("Erreur lors du chargement des véhicules");
   return response.json();
 };
 
 const fetchDriverById = async (id: string): Promise<Driver> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}driver/${id}`);
-  if (!response.ok) throw new Error("Failed to fetch driver");
+  if (!response.ok) throw new Error("Erreur lors du chargement du chauffeur");
   return response.json();
 };
 
@@ -50,7 +50,7 @@ const updateDriver = async ({ id, data }: { id: number; data: Partial<Driver> })
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Failed to update driver");
+    throw new Error(error.message || "Erreur lors de la mise à jour du chauffeur");
   }
   return response.json();
 };
@@ -83,7 +83,7 @@ function ModifierDriverContent({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  // Form states
+  // États du formulaire
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -97,7 +97,7 @@ function ModifierDriverContent({ id }: { id: string }) {
   const [toastMsg, setToastMsg] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
 
-  // Fetch cars for select dropdown
+  // Chargement des véhicules pour le menu déroulant
   const { data: cars = [], isLoading: isLoadingCars } = useQuery({
     queryKey: ["cars"],
     queryFn: fetchCars,
@@ -108,7 +108,7 @@ function ModifierDriverContent({ id }: { id: string }) {
     label: `${car.brand || ""} ${car.model || ""} - ${car.registration}`.trim(),
   }));
 
-  // Fetch driver data
+  // Chargement des données du chauffeur
   useEffect(() => {
     fetchDriverById(id)
       .then((driver) => {
@@ -128,7 +128,7 @@ function ModifierDriverContent({ id }: { id: string }) {
         }
       })
       .catch((error) => {
-        showToast(`❌ ${error.message || "Failed to load driver"}`, "error");
+        showToast(`❌ ${error.message || "Échec du chargement du chauffeur"}`, "error");
       })
       .finally(() => setIsLoading(false));
   }, [id]);
@@ -144,11 +144,11 @@ function ModifierDriverContent({ id }: { id: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
       queryClient.invalidateQueries({ queryKey: ["driver", id] });
-      showToast("✅ Driver updated successfully", "success");
+      showToast("✅ Chauffeur modifié avec succès", "success");
       setTimeout(() => router.push("/drivers"), 1500);
     },
     onError: (error: Error) => {
-      let errorMessage = error.message || "Connection problem";
+      let errorMessage = error.message || "Problème de connexion";
       showToast(`❌ ${errorMessage}`, "error");
     },
   });
@@ -158,44 +158,44 @@ function ModifierDriverContent({ id }: { id: string }) {
 
     let isValid = true;
 
-    // Validate required fields
+    // Validation des champs obligatoires
     if (validator.isEmpty(firstName)) {
-      showToast("❌ First name is required", "error");
+      showToast("❌ Le prénom est requis", "error");
       isValid = false;
     }
 
     if (validator.isEmpty(lastName)) {
-      showToast("❌ Last name is required", "error");
+      showToast("❌ Le nom est requis", "error");
       isValid = false;
     }
 
-    // Validate email format if provided
+    // Validation du format email si fourni
     if (email && !validator.isEmail(email)) {
-      showToast("❌ Invalid email format", "error");
+      showToast("❌ Format d'email invalide", "error");
       isValid = false;
     }
 
-    // Validate CIN format
+    // Validation du format CIN
     if (cin) {
       if (!validator.isLength(cin, { min: 8, max: 12 })) {
-        showToast("❌ CIN must be between 8 and 12 characters", "error");
+        showToast("❌ Le CIN doit contenir entre 8 et 12 caractères", "error");
         isValid = false;
       }
       if (!validator.matches(cin, /^[A-Z0-9]+$/)) {
-        showToast("❌ CIN can only contain uppercase letters and numbers", "error");
+        showToast("❌ Le CIN ne peut contenir que des lettres majuscules et des chiffres", "error");
         isValid = false;
       }
     }
 
-    // Validate phone if provided
+    // Validation du téléphone si fourni
     if (phone && !validator.isMobilePhone(phone, "any")) {
-      showToast("❌ Invalid phone format", "error");
+      showToast("❌ Format de téléphone invalide", "error");
       isValid = false;
     }
 
-    // Validate license number if provided
+    // Validation du numéro de permis si fourni
     if (licenseNumber && !validator.isLength(licenseNumber, { min: 5 })) {
-      showToast("❌ License number must be at least 5 characters", "error");
+      showToast("❌ Le numéro de permis doit contenir au moins 5 caractères", "error");
       isValid = false;
     }
 
@@ -230,65 +230,65 @@ function ModifierDriverContent({ id }: { id: string }) {
   return (
     <Toast.Provider>
       <div className="p-6">
-        <PageBreadcrumb pageTitle="Edit Driver" />
+        <PageBreadcrumb pageTitle="Modifier le chauffeur" />
 
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handleCancel}
             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            ← Back to List
+            ← Retour à la liste
           </button>
         </div>
 
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
             <h3 className="text-xl font-semibold text-black dark:text-white">
-              Edit Driver
+              Modifier le chauffeur
             </h3>
           </div>
 
           <form onSubmit={submitForm}>
             <div className="p-6.5">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* First Name */}
+                {/* Prénom */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    First Name <span className="text-danger">*</span>
+                    Prénom <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="First name"
+                    placeholder="Prénom"
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                 </div>
 
-                {/* Last Name */}
+                {/* Nom */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Last Name <span className="text-danger">*</span>
+                    Nom <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Last name"
+                    placeholder="Nom"
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                 </div>
 
-                {/* Phone */}
+                {/* Téléphone */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Phone
+                    Téléphone
                   </label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Phone number"
+                    placeholder="Numéro de téléphone"
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                 </div>
@@ -302,11 +302,11 @@ function ModifierDriverContent({ id }: { id: string }) {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email address"
+                    placeholder="Adresse email"
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Used as login credential
+                    Utilisé comme identifiant de connexion
                   </p>
                 </div>
 
@@ -319,41 +319,41 @@ function ModifierDriverContent({ id }: { id: string }) {
                     type="text"
                     value={cin}
                     onChange={(e) => setCin(e.target.value.toUpperCase())}
-                    placeholder="National ID card"
+                    placeholder="Carte d'identité nationale"
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Used as initial password
+                    Utilisé comme mot de passe initial
                   </p>
                 </div>
 
-                {/* License Number */}
+                {/* Numéro de permis */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    License Number
+                    Numéro de permis
                   </label>
                   <input
                     type="text"
                     value={licenseNumber}
                     onChange={(e) => setLicenseNumber(e.target.value)}
-                    placeholder="Driver's license number"
+                    placeholder="Numéro de permis de conduire"
                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
                   />
                 </div>
 
-                {/* Assigned Car */}
+                {/* Véhicule assigné */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Assigned Vehicle
+                    Véhicule assigné
                   </label>
                   <Select
-                    placeholder="Select a vehicle"
+                    placeholder="Sélectionner un véhicule"
                     value={selectedCar}
                     isClearable
                     isLoading={isLoadingCars}
                     onChange={(value) => setSelectedCar(value)}
                     options={carOptions}
-                    noOptionsMessage={() => "No vehicles available"}
+                    noOptionsMessage={() => "Aucun véhicule disponible"}
                     className="react-select-container"
                     classNamePrefix="react-select"
                     theme={(theme) => ({
@@ -369,10 +369,10 @@ function ModifierDriverContent({ id }: { id: string }) {
                   />
                 </div>
 
-                {/* Active Status */}
+                {/* Statut */}
                 <div>
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                    Status
+                    Statut
                   </label>
                   <label className="flex items-center cursor-pointer">
                     <input
@@ -383,33 +383,33 @@ function ModifierDriverContent({ id }: { id: string }) {
                     />
                     <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                     <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                      {active ? "Active" : "Inactive"}
+                      {active ? "Actif" : "Inactif"}
                     </span>
                   </label>
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Boutons */}
               <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={handleCancel}
                   className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={updateMutation.isPending}
-                  className="rounded-md bg-primary px-6 py-3 font-medium text-white hover:bg-opacity-90 transition-colors"
+                  className="rounded-md border border-stroke px-6 py-3 font-medium hover:bg-gray-100 dark:hover:bg-meta-4 transition-colors"
                 >
                   {updateMutation.isPending ? (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent inline-block mr-2"></div>
-                      Updating...
+                      Mise à jour...
                     </>
                   ) : (
-                    "Update Driver"
+                    "Mettre à jour le chauffeur"
                   )}
                 </button>
               </div>
@@ -417,7 +417,7 @@ function ModifierDriverContent({ id }: { id: string }) {
           </form>
         </div>
 
-        {/* Toast Notifications */}
+        {/* Notifications Toast */}
         <Toast.Root
           open={toastOpen}
           onOpenChange={setToastOpen}
