@@ -69,11 +69,6 @@ const navItems: NavItem[] = [
         path: "/purchase-invoice/list/PURCHASE_REFUND",
         icon: <ReceiptIcon size={16} />
       },
-      {
-        name: "Factures bon de sortie",
-        path: "/purchase-invoice/list/SHIPPING_NOTE_INVOICE",
-        icon: <TruckIcon size={16} />
-      },
     ],
   },
   // Factures de vente avec sous-menu
@@ -408,7 +403,7 @@ const AppSidebar: React.FC = () => {
             <>
               <Image
                 className="dark:hidden"
-                src="/images/logo/logo.svg"
+                src="/images/logo/logo-oursys.png"
                 alt="Logo"
                 width={150}
                 height={40}

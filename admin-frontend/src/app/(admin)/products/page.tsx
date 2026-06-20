@@ -102,11 +102,6 @@ export default function ProductsPage() {
       size: 200,
     },
     {
-      accessorKey: "description",
-      header: "Description",
-      size: 250,
-    },
-    {
       accessorKey: "stock",
       header: "Stock",
       size: 100,

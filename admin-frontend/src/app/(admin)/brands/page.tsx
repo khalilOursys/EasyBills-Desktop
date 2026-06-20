@@ -93,7 +93,7 @@ export default function BrandsPage() {
       header: "Description",
       size: 300,
     },
-    {
+    /* {
       accessorKey: "isActive",
       header: "Statut",
       size: 100,
@@ -107,7 +107,7 @@ export default function BrandsPage() {
           {cell.getValue<boolean>() ? "Actif" : "Inactif"}
         </span>
       ),
-    },
+    }, */
     {
       id: "actions",
       header: "Actions",
