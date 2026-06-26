@@ -7,14 +7,32 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { PaymentForm } from "@/components/payments/PaymentForm";
 
+// ✅ Updated Payment interface with full invoice objects
 interface Payment {
   id: number;
   amount: number;
   method: string;
+  invoiceNumber: string;
   purchaseInvoiceId?: number;
   saleInvoiceId?: number;
   supplierId?: number;
   clientId?: number;
+  purchaseInvoice?: {
+    id: number;
+    invoiceNumber: string;
+  };
+  saleInvoice?: {
+    id: number;
+    invoiceNumber: string;
+  };
+  supplier?: {
+    id: number;
+    name: string;
+  };
+  client?: {
+    id: number;
+    name: string;
+  };
 }
 
 const fetchPayment = async (id: string): Promise<Payment> => {
@@ -59,10 +77,22 @@ export default function EditPaymentPage() {
   useEffect(() => {
     if (payment) {
       const isPurchase = !!payment.purchaseInvoiceId;
+
+      // ✅ Get invoice number from the full invoice object
+      let invoiceNumber = "";
+      if (isPurchase && payment.purchaseInvoice) {
+        invoiceNumber = payment.purchaseInvoice.invoiceNumber;
+      } else if (!isPurchase && payment.saleInvoice) {
+        invoiceNumber = payment.saleInvoice.invoiceNumber;
+      }
+
+      console.log("Invoice Number:", invoiceNumber); // ✅ Now you have the invoice number
+
       setInitialData({
         id: payment.id,
         amount: payment.amount,
         method: payment.method,
+        invoiceNumber: invoiceNumber, // ✅ Pass invoice number to form
         paymentType: isPurchase ? "purchase" : "sale",
         invoiceId: isPurchase
           ? payment.purchaseInvoiceId

@@ -1,54 +1,39 @@
 // src/app/payments/add/page.tsx
-"use client";
+import { Suspense } from "react";
+import AddPaymentClient from "./AddPaymentClient";
 
-import React from "react";
-import { useSearchParams } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import PageBreadcrumb from "@/components/common/PageBreadCrumb";
-import { PaymentForm } from "@/components/payments/PaymentForm";
-
-const addPayment = async (paymentData: any) => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}payments`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(paymentData),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to create payment");
+// Validate the type parameter
+function validateInvoiceType(type: string | undefined): "purchase" | "sale" | undefined {
+  if (type === "purchase" || type === "sale") {
+    return type;
   }
-  return response.json();
-};
+  return undefined;
+}
 
-export default function AddPaymentPage() {
-  const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
+export default async function AddPaymentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ supplierId?: string; clientId?: string; type?: string }>;
+}) {
+  const params = await searchParams;
 
-  // Get query parameters from URL
-  const supplierId = searchParams.get("supplierId") || undefined;
-  const clientId = searchParams.get("clientId") || undefined;
-  const invoiceType = (searchParams.get("type") as "purchase" | "sale") || undefined;
-
-  const mutation = useMutation({
-    mutationFn: addPayment,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-    },
-  });
+  const supplierId = params.supplierId || undefined;
+  const clientId = params.clientId || undefined;
+  const invoiceType = validateInvoiceType(params.type);
 
   return (
-    <div>
-      <PageBreadcrumb pageTitle="Ajouter un paiement" />
-      <PaymentForm
-        isEditing={false}
+    <Suspense fallback={
+      <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500 dark:text-gray-400">Chargement...</div>
+        </div>
+      </div>
+    }>
+      <AddPaymentClient
         supplierId={supplierId}
         clientId={clientId}
         invoiceType={invoiceType}
-        onSubmit={mutation.mutateAsync}
-        isLoading={mutation.isPending}
       />
-    </div>
+    </Suspense>
   );
 }
